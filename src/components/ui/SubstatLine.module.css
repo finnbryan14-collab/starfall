@@ -1,0 +1,32 @@
+.sub {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  padding: 10px 0 12px;
+  border-top: 1px solid var(--rule);
+}
+
+.value {
+  font-variant-numeric: tabular-nums;
+}
+
+.bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+}
+
+.bar i {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: 2px;
+  background: var(--dim);
+  transition: width var(--d-move) var(--ease-out);
+}
+
+.sub[data-goal] .bar i {
+  background: var(--gold);
+}

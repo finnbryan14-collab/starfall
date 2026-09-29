@@ -1,0 +1,73 @@
+.sheet {
+  width: 100%;
+  max-width: var(--column);
+  margin: auto auto 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-sheet) var(--r-sheet) 0 0;
+  background: var(--well);
+  color: var(--starlight);
+  font: inherit;
+}
+
+.sheet::backdrop {
+  background: rgb(10 12 32 / 0.6);
+}
+
+.sheet[open] {
+  animation: rise var(--d-move) var(--ease-out);
+}
+
+.sheet[data-reduced][open] {
+  animation: none;
+}
+
+@keyframes rise {
+  from {
+    transform: translateY(16px);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet[open] {
+    animation: none;
+  }
+}
+
+.inner {
+  padding: var(--s-2) var(--s-4) calc(var(--s-5) + env(safe-area-inset-bottom));
+}
+
+.handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--rule);
+  margin: var(--s-2) auto var(--s-3);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+
+.title {
+  font-size: var(--t-lg);
+  font-weight: 600;
+  margin: 0;
+}
+
+.close {
+  min-height: var(--tap);
+  padding: 0 var(--s-3);
+  border: 0;
+  border-radius: var(--r-input);
+  background: transparent;
+  color: var(--gold);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}

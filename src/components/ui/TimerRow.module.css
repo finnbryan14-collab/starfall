@@ -1,0 +1,39 @@
+.timer {
+  display: block;
+  padding: var(--s-3) 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.top {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+
+.state {
+  color: var(--dim);
+  text-align: right;
+}
+
+.state[data-ready] {
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.track {
+  height: 2px;
+  background: var(--rule);
+  border-radius: 2px;
+  margin-top: var(--s-2);
+  overflow: hidden;
+}
+
+.track i {
+  display: block;
+  height: 100%;
+  background: var(--starlight);
+}
+
+.track i[data-ready] {
+  background: var(--gold);
+}

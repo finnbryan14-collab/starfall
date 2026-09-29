@@ -1,0 +1,62 @@
+.row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: var(--s-3);
+  min-height: 60px;
+  padding: var(--s-2) 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.label {
+  font-size: var(--t-md);
+}
+
+.note {
+  display: block;
+  font-size: var(--t-xs);
+  color: var(--faint);
+  line-height: 1.35;
+  margin-top: 2px;
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.button {
+  width: var(--tap);
+  height: var(--tap);
+  border: 0;
+  border-radius: var(--r-input);
+  background: var(--well);
+  color: inherit;
+  font: inherit;
+  font-size: var(--t-lg);
+  line-height: 1;
+  cursor: pointer;
+  transition: background var(--d-quick);
+}
+
+.button:active {
+  background: var(--well-2);
+}
+
+.button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.input {
+  width: 7.2ch;
+  background: transparent;
+  border: 0;
+  text-align: right;
+  font: inherit;
+  font-size: var(--t-lg);
+  color: inherit;
+  padding: 0 6px;
+  font-variant-numeric: tabular-nums;
+}

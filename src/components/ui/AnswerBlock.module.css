@@ -1,0 +1,37 @@
+.title {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: var(--t-2xl);
+  line-height: 1.15;
+  margin: var(--s-4) 0 0;
+}
+
+.answer {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: var(--t-hero);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  margin: var(--s-3) 0 0;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.unit {
+  font-size: 0.42em;
+  color: var(--dim);
+  margin-left: 2px;
+  vertical-align: 0.95em;
+  letter-spacing: 0;
+}
+
+.lede {
+  color: var(--dim);
+  margin: var(--s-2) 0 0;
+  max-width: 36ch;
+}
+
+.lede strong {
+  color: var(--starlight);
+  font-weight: 600;
+}
