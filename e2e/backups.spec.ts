@@ -73,6 +73,23 @@ async function importWishes(page: Page) {
   await expect(page.getByText(/Imported 23 new pulls/)).toBeVisible({ timeout: 30_000 });
 }
 
+/**
+ * Waits until the page is hydrated and its effects have run.
+ *
+ * `goto` resolves on `load`, which is before React attaches handlers — setting
+ * a file on the input then goes nowhere. The HoYoLAB field is only rendered
+ * once the settings read has come back, so its presence means both have
+ * happened.
+ */
+async function ready(page: Page) {
+  await expect(
+    page
+      .getByLabel('HoYoLAB cookie')
+      .or(page.getByRole('button', { name: 'Refresh wishes' }))
+      .first(),
+  ).toBeVisible();
+}
+
 /** Exports and returns the file's parsed contents. */
 async function exportBackup(page: Page) {
   const [download] = await Promise.all([
@@ -120,6 +137,7 @@ test.describe('Backups', () => {
   test('exports everything as one dated JSON file', async ({ page }) => {
     await mockGachaLog(page);
     await page.goto('/account');
+    await ready(page);
     await importWishes(page);
 
     const backup = await exportBackup(page);
@@ -148,12 +166,14 @@ test.describe('Backups', () => {
   test('survives the device losing everything', async ({ page }) => {
     await mockGachaLog(page);
     await page.goto('/account');
+    await ready(page);
     await importWishes(page);
 
     await page.goto('/plan');
     await expect(page.getByRole('spinbutton', { name: 'Pity' })).toHaveValue('22');
 
     await page.goto('/account');
+    await ready(page);
     const backup = await exportBackup(page);
 
     await wipe(page);
@@ -161,6 +181,7 @@ test.describe('Backups', () => {
     await expect(page.getByRole('spinbutton', { name: 'Pity' })).toHaveValue('0');
 
     await page.goto('/account');
+    await ready(page);
     await page.getByLabel('Backup file').setInputFiles({
       name: backup.filename,
       mimeType: 'application/json',
@@ -181,6 +202,7 @@ test.describe('Backups', () => {
    */
   test('never writes the HoYoLAB cookie into the file', async ({ page }) => {
     await page.goto('/account');
+    await ready(page);
     await page.getByLabel('HoYoLAB cookie').fill(COOKIE);
     await page.getByRole('button', { name: 'Turn it on' }).click();
     await expect(page.getByText(/Starfall can refresh itself now/)).toBeVisible();
@@ -194,6 +216,7 @@ test.describe('Backups', () => {
 
   test('leaves the cookie alone when a backup is restored over it', async ({ page }) => {
     await page.goto('/account');
+    await ready(page);
     const empty = await exportBackup(page);
 
     await page.getByLabel('HoYoLAB cookie').fill(COOKIE);
@@ -216,6 +239,7 @@ test.describe('Backups', () => {
 
   test('refuses a file that is not a backup, and says which way it is wrong', async ({ page }) => {
     await page.goto('/account');
+    await ready(page);
 
     await page.getByLabel('Backup file').setInputFiles({
       name: 'notes.json',
@@ -235,11 +259,13 @@ test.describe('Backups', () => {
   test('asks before it replaces anything', async ({ page }) => {
     await mockGachaLog(page);
     await page.goto('/account');
+    await ready(page);
     await importWishes(page);
     const backup = await exportBackup(page);
 
     await wipe(page);
     await page.goto('/account');
+    await ready(page);
 
     await page.getByLabel('Backup file').setInputFiles({
       name: backup.filename,

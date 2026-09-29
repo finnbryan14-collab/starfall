@@ -16,6 +16,7 @@ import { useMountedNow } from '@/lib/use-now';
 import styles from './AccountScreen.module.css';
 import { useEnkaProfile } from './useEnkaProfile';
 import { BackupPanel } from './BackupPanel';
+import { GoodImport } from './GoodImport';
 import { HoyolabPanel } from './HoyolabPanel';
 import { WishImport } from './WishImport';
 
@@ -231,6 +232,8 @@ export function AccountScreen() {
 
       <div className={screen.colSide}>
         <WishImport />
+
+        <GoodImport />
 
         <HoyolabPanel uid={profile?.uid ?? null} />
 

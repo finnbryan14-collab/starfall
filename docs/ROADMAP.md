@@ -43,7 +43,7 @@ Work top to bottom. Each task is small enough for one Claude Code session. Check
 - [x] Wish URL from disk: File System Access picker for the game’s webCaches folder, handle persisted, fresh authkey read on demand. Falls back to pasting everywhere it is unsupported. Parser and tests already landed. **Done when** a real cache on a Chromium desktop yields a working authkey, and a game update does not break the saved handle.
 - [x] HoYoLAB opt-in (optional, explicit): real-time notes for resin and timers, Traveler’s Diary for actual primogem income, and `genAuthKeyByCookieToken` so wish history refreshes without pasting. Cookie stored on-device only, never persisted server-side, with a plain warning about what it grants. **Done when** declining it costs nothing that works today.
 - [x] Luck stats page: pity at each 5★, 50/50 record, average vs expected.
-- [ ] GOOD inventory import with Zod validation and a confirm step.
+- [x] GOOD inventory import with Zod validation and a confirm step.
 - [x] Backups: export and import all tables as one JSON file.
 - [x] Fan-project notice in Account and footer.
 
