@@ -1,6 +1,14 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const PORT = 3000;
+/**
+ * E2E runs against a production build on its own port.
+ *
+ * The Next dev server compiles routes on demand, and under parallel workers
+ * that turned into 30-second timeouts on inputs that were fine in isolation —
+ * 13 of 16 tests failed that way. A built server is both stable and closer to
+ * what ships. Port 3100 keeps it clear of a dev server on 3000.
+ */
+const PORT = 3100;
 const baseURL = `http://localhost:${PORT}`;
 
 export default defineConfig({
@@ -25,9 +33,11 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: 'pnpm dev',
+    command: 'pnpm build:e2e && pnpm start:e2e',
     url: baseURL,
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
+    // Never reuse: a stray dev server on this port would reintroduce exactly
+    // the on-demand compilation this avoids.
+    reuseExistingServer: false,
+    timeout: 180_000,
   },
 });

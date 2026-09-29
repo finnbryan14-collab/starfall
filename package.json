@@ -12,7 +12,9 @@
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
-    "perf": "vitest run --config vitest.perf.config.mts"
+    "perf": "vitest run --config vitest.perf.config.mts",
+    "start:e2e": "cross-env NEXT_PUBLIC_ENABLE_DEV_PAGES=1 next start -p 3100",
+    "build:e2e": "cross-env NEXT_PUBLIC_ENABLE_DEV_PAGES=1 next build"
   },
   "dependencies": {
     "animejs": "^4.5.0",
@@ -33,6 +35,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.1.1",
+    "cross-env": "^10.1.0",
     "eslint": "^9",
     "eslint-config-next": "16.3.6",
     "eslint-config-prettier": "^10.1.8",

@@ -33,7 +33,6 @@ export function SegmentedControl<T extends string>({
         return (
           <label key={option.value} className={styles.option} data-selected={selected || undefined}>
             <input
-              className="sr-only"
               type="radio"
               name={name}
               value={option.value}

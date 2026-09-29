@@ -1,0 +1,83 @@
+.rows {
+  border-top: 1px solid var(--rule);
+  margin-top: var(--s-3);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--s-3);
+  min-height: var(--tap);
+  padding: var(--s-2) 0;
+  border-bottom: 1px solid var(--rule);
+  cursor: pointer;
+}
+
+.checkbox {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--gold);
+  flex: none;
+}
+
+.text {
+  min-width: 0;
+}
+
+.label {
+  display: block;
+}
+
+.note {
+  display: block;
+  font-size: var(--t-xs);
+  color: var(--faint);
+  line-height: 1.35;
+}
+
+.amount {
+  text-align: right;
+  font-size: var(--t-sm);
+  color: var(--dim);
+  white-space: nowrap;
+}
+
+/* Marks a community midpoint so it cannot be mistaken for a published figure. */
+.estimate {
+  display: block;
+  font-size: var(--t-xs);
+  color: var(--faint);
+}
+
+.stepper {
+  border-top: 1px solid var(--rule);
+  margin-top: var(--s-3);
+}
+
+.footer {
+  margin: var(--s-4) 0 0;
+  color: var(--dim);
+  font-size: var(--t-sm);
+}
+
+.footer strong {
+  color: var(--starlight);
+  font-weight: 600;
+}
+
+.link {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--gold);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.verified {
+  margin: var(--s-2) 0 0;
+  color: var(--faint);
+  font-size: var(--t-xs);
+}

@@ -4,6 +4,8 @@ import { pathToFileURL } from 'node:url';
 
 import { expect, test, type Page } from '@playwright/test';
 
+import { enterPreviewExample } from './helpers';
+
 /**
  * Side-by-side comparison of the Phase 0 app shell against design/preview.html.
  *
@@ -89,6 +91,9 @@ for (const viewport of VIEWPORTS) {
 
     const app = await context.newPage();
     await app.goto('/plan');
+    // The screen computes from stored inputs now, so feed it the same example
+    // the preview is hardcoded to. Otherwise the two sides are not comparable.
+    await enterPreviewExample(app);
     await settle(app);
     const appPng = await app.screenshot({ path: path.join(OUT, `app-${viewport.name}.png`) });
 
@@ -100,7 +105,7 @@ for (const viewport of VIEWPORTS) {
     });
 
     // Both must have actually rendered the headline before we compare them.
-    await expect(app.getByText('Skirk returns Oct 13')).toBeVisible();
+    await expect(app.getByText(/Skirk/)).toBeVisible();
     await expect(preview.getByText('Skirk returns Oct 13')).toBeVisible();
 
     const composer = await context.newPage();

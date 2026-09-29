@@ -33,6 +33,7 @@ export type NewPlanInput = {
   guaranteed?: boolean;
   welkinDaysRemaining?: number;
   endgameCompletion?: number;
+  incomeOverride?: number | null;
   assumptions?: IncomeAssumptions;
   enabled?: IncomeToggles;
 };
@@ -60,6 +61,7 @@ export function makePlan(input: NewPlanInput = {}): Plan {
     guaranteed: input.guaranteed ?? false,
     welkinDaysRemaining: input.welkinDaysRemaining ?? 0,
     endgameCompletion: input.endgameCompletion ?? 1,
+    incomeOverride: input.incomeOverride ?? null,
     assumptions: input.assumptions ?? { ...DEFAULT_ASSUMPTIONS },
     enabled: input.enabled ?? { ...DEFAULT_TOGGLES },
     createdAt: now,

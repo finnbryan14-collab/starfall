@@ -28,6 +28,8 @@ export type Plan = {
   guaranteed: boolean;
   welkinDaysRemaining: number;
   endgameCompletion: number;
+  /** Pinned income figure, or null to use the projection. */
+  incomeOverride: number | null;
   assumptions: IncomeAssumptions;
   enabled: IncomeToggles;
   createdAt: number;
