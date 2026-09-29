@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 
 import { wishSummary } from '@/db/wishes';
@@ -217,6 +218,12 @@ export function WishImport() {
 
           <p className={styles.note}>
             Guaranteed pulls aren&rsquo;t counted as 50/50 wins — they weren&rsquo;t coin flips.
+          </p>
+
+          <p className={styles.note}>
+            <Link href="/account/luck" className={styles.quiet}>
+              See how lucky that actually is
+            </Link>
           </p>
         </div>
       ) : null}

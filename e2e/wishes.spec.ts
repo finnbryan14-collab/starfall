@@ -252,4 +252,39 @@ test.describe('Wish history import', () => {
     await page.getByRole('button', { name: 'Import wishes' }).click();
     await expect(page.getByText('Already up to date.')).toBeVisible({ timeout: 30_000 });
   });
+
+  /**
+   * ROADMAP Phase 4, luck stats: pity at each 5★, the 50/50 record, and the
+   * run measured against what the model expects.
+   */
+  test('shows how lucky the run actually was', async ({ page }) => {
+    await mockGachaLog(page);
+    await page.goto('/account');
+    await importFromPaste(page);
+    await expect(page.getByText(/Imported 94 new pulls/)).toBeVisible({ timeout: 30_000 });
+
+    await page.getByRole('link', { name: /How lucky/i }).click();
+    await expect(page).toHaveURL(/\/account\/luck$/);
+
+    // Two 5★s in 72 counted pulls, against an expected 124.6. The exact
+    // convolution puts that at the 93rd percentile.
+    await expect(page.getByRole('heading', { name: 'Your luck' })).toBeVisible();
+    await expect(page.getByText(/would still be waiting/)).toContainText('Lucky.');
+    await expect(page.getByText(/would still be waiting/)).toContainText('2');
+
+    const list = page.getByLabel('Every 5-star, newest last');
+    await expect(list).toContainText('Qiqi');
+    await expect(list).toContainText('Skirk');
+    await expect(list).toContainText('71 pity');
+    // Qiqi is standard, so that 5★ was a lost 50/50, and Skirk was the
+    // guarantee being cashed in rather than a flip.
+    await expect(list).toContainText('a lost 50/50');
+    await expect(list).toContainText('Guaranteed, not a coin flip');
+  });
+
+  test('says there is nothing to judge before any history is imported', async ({ page }) => {
+    await page.goto('/account/luck');
+    await expect(page.getByText(/Nothing to judge yet/)).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Your luck' })).toBeVisible();
+  });
 });

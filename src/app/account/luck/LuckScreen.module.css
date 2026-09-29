@@ -1,0 +1,95 @@
+.back {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  color: var(--gold);
+  font-size: var(--t-sm);
+  text-decoration: none;
+}
+
+.back:hover {
+  text-decoration: underline;
+}
+
+.empty {
+  color: var(--dim);
+  margin: var(--s-4) 0 0;
+  max-width: 44ch;
+}
+
+.stats {
+  margin: var(--s-6) 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--s-3);
+}
+
+.stat {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-3);
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: var(--s-2);
+}
+
+.statLabel {
+  color: var(--dim);
+}
+
+.statValue {
+  color: var(--starlight);
+  font-weight: 600;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.pulls {
+  margin: var(--s-4) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pull {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px var(--s-3);
+  padding: var(--s-2) 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.name {
+  color: var(--starlight);
+  font-weight: 600;
+}
+
+.pity {
+  color: var(--dim);
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.bar {
+  grid-column: 1 / -1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--well);
+  overflow: hidden;
+}
+
+.barFill {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--gold);
+}
+
+/* A standard 5★ is a lost 50/50: shown apart from the featured ones. */
+.barFill.lost {
+  background: var(--faint);
+}
+
+.tag {
+  grid-column: 1 / -1;
+  color: var(--faint);
+  font-size: var(--t-xs);
+}

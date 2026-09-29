@@ -64,6 +64,17 @@ Ship `consolidated55` as the default (stateless, 0.55). Leave a `counterModel` s
 - The full CDF curve for the Fate Dial.
 - Pulls needed for 50%, 75%, and 90% odds (so the app can say "You're 18 pulls short of 90% odds").
 
+### Reading the model backwards: how lucky a run was
+
+"Average pity 58 against 62.3 expected" gives the sign but not the size. Three 5★s at that pace is noise; forty is not. The exact answer uses the same distribution:
+
+> The pulls needed for _k_ 5★s is the _k_-fold convolution of the single-5★ distribution. Its survival function at the pulls actually spent is the share of players who would still be waiting.
+
+So "luckier than 93%" is exact, not a heuristic or a simulation — the planner's own model, read in the other direction (`src/engine/wish/luck.ts`).
+
+- Only the pulls that produced a 5★ count. Pity built up since the last one is an unfinished attempt and carries no information yet.
+- Exact up to 150 copies; beyond that the central limit theorem takes over (150 independent draws of a distribution bounded at 90). A test asserts the two agree across that boundary to within 2 points, so the number a player sees never jumps.
+
 ---
 
 ## 2. Weapon event banner (Epitomized Path) — backlog, not v1
