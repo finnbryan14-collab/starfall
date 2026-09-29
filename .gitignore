@@ -36,3 +36,6 @@ gen_preview.html
 
 # debug logs
 *-debug.log*
+
+# comparison screenshots (regenerate with pnpm test:e2e)
+screenshots/
