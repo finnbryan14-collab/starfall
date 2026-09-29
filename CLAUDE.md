@@ -20,11 +20,11 @@ A Genshin Impact companion app: a probability-first wish planner, an artifact ke
 - Next.js (App Router) + TypeScript strict, `src/` directory, pnpm
 - Tailwind CSS mapped to `src/styles/tokens.css`
 - anime.js v4 (`animejs`) for all animation
-- Zustand for UI state; Dexie (IndexedDB) for persistence
+- Dexie (IndexedDB) for persistence; screen state is plain React hooks (see DECISIONS: Zustand went unused)
 - d3-scale and d3-shape for chart geometry (rendered as our own SVG, not a chart library)
 - Comlink + Web Worker for Monte Carlo
 - Vitest (unit), Playwright (e2e and screenshots)
-- Serwist (or the current recommended option) for the PWA service worker
+- A hand-written service worker in `public/sw.js` (see DECISIONS: Serwist was more machinery than a local-first app earns)
 - Deploy on Vercel
 
 ## Layout
@@ -86,7 +86,8 @@ Update this section if the scripts change.
 - Enka and wish-history requests go through our route handlers, never directly from the browser.
 - Respect Enka's `ttl`. Never retry on 429 without waiting.
 - Never log, persist, or send the wish-history authkey anywhere except the one proxied request.
-- No HoYoLAB cookies, no game memory reading, no input automation.
+- HoYoLAB cookies are an **explicit opt-in**, off by default, and everything else works without one (DATA.md section 5). Only the six cookie names those endpoints need are kept, filtered before the first write. Never widen that set without a DECISIONS entry.
+- No game memory reading, no input automation. Permanently out of scope: it risks bans.
 
 **Accessibility**
 
