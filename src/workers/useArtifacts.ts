@@ -1,0 +1,97 @@
+'use client';
+
+import * as Comlink from 'comlink';
+import { useEffect, useRef, useState } from 'react';
+
+import type { ResinEstimate, ResinEstimateInput } from '@/engine/artifacts/resin';
+import type { KeepOrTrashInput } from '@/engine/artifacts/score';
+
+import type { ArtifactsWorkerApi, ScoreResponse } from './artifacts.worker';
+
+/**
+ * Runs the artifact simulations in a worker and hands back the latest result.
+ *
+ * Requests are serialised by a monotonic id: a slow run that finishes after a
+ * newer one started is dropped rather than overwriting it. Without that, typing
+ * quickly in a substat field can leave the screen showing the answer to an
+ * input you already replaced.
+ *
+ * `pending` is derived from whether the stored answer belongs to the current
+ * input, rather than being set at the top of the effect. Setting it there would
+ * force an extra render on every input change for no benefit.
+ */
+
+type Answer = {
+  /** The input this answer belongs to. */
+  key: string;
+  score: ScoreResponse;
+  resin: ResinEstimate | null;
+};
+
+export type ArtifactsState = {
+  score: ScoreResponse | null;
+  resin: ResinEstimate | null;
+  /** True while the shown answer does not yet match the current input. */
+  pending: boolean;
+};
+
+export function useArtifacts(
+  scoreInput: KeepOrTrashInput,
+  resinInput: ResinEstimateInput | null,
+): ArtifactsState {
+  const apiRef = useRef<Comlink.Remote<ArtifactsWorkerApi> | null>(null);
+  const workerRef = useRef<Worker | null>(null);
+  const requestId = useRef(0);
+  const [answer, setAnswer] = useState<Answer | null>(null);
+
+  // Owned for the component's lifetime; started lazily by the run below so
+  // there is no render just to record that it exists.
+  useEffect(() => {
+    return () => {
+      workerRef.current?.terminate();
+      workerRef.current = null;
+      apiRef.current = null;
+    };
+  }, []);
+
+  const key = JSON.stringify({ scoreInput, resinInput });
+
+  useEffect(() => {
+    if (!workerRef.current) {
+      workerRef.current = new Worker(new URL('./artifacts.worker.ts', import.meta.url));
+      apiRef.current = Comlink.wrap<ArtifactsWorkerApi>(workerRef.current);
+    }
+    const api = apiRef.current;
+    if (!api) return;
+
+    const id = ++requestId.current;
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const [score, resin] = await Promise.all([
+          api.score(scoreInput),
+          resinInput ? api.resin(resinInput) : Promise.resolve(null),
+        ]);
+        // A newer request started while this one ran: its answer wins.
+        if (cancelled || id !== requestId.current) return;
+        setAnswer({ key, score, resin });
+      } catch {
+        // Leave the previous answer showing rather than blanking the screen.
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // The inputs are fresh objects every render, so they are compared by value
+    // through `key`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+
+  return {
+    score: answer?.score ?? null,
+    resin: answer?.resin ?? null,
+    pending: answer?.key !== key,
+  };
+}
