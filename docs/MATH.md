@@ -48,7 +48,14 @@ Ship `consolidated55` as the default (stateless, 0.55). Leave a `counterModel` s
 
 - Guaranteed, pity 0, 1 copy → CDF(90) = 1.
 - Not guaranteed, pity 0, 1 copy → CDF(180) = 1 and CDF(90) ≈ 0.6345.
-- CDF is non-decreasing and ends at 1 once `pulls ≥ (90 − pity) + 90 × copies`.
+- CDF is non-decreasing and ends at 1 once `pulls ≥ 90 × (2 × copies − (guaranteed ? 1 : 0)) − pity`.
+  Worst case is a lost 50/50 before _every_ copy, because the guarantee clears again after each
+  featured pull — so each copy costs two 5★ rather than one, and a player already on a guarantee
+  saves exactly one of them. An earlier version of this line read `(90 − pity) + 90 × copies`, which
+  assumes a single loss across the whole run: right for one copy by coincidence, and too short from
+  two up. At C6 it gives 720 pulls where the true bound is 1,260, which silently truncates the
+  curve. `exhaustionBound()` in `src/engine/wish/featured.ts` is the implementation, and
+  `featuredCdf` defaults `maxPulls` to it so the curve always ends at certainty.
 - Monte Carlo simulation (100k runs, seeded) agrees with the DP within 0.5 percentage points at 10 checkpoints.
 
 ### Outputs the UI needs
