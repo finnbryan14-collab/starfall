@@ -1,4 +1,4 @@
-# Astrolabe
+# Starfall
 
 Planning package for a Genshin Impact companion app, ready for Claude Code.
 
@@ -17,7 +17,7 @@ Open `design/preview.html` in a browser (it needs internet for fonts and anime.j
 - Installable web app for phone and laptop, not a native app
 - For you and friends first, not a public launch
 - America server
-- Working name "Astrolabe"
+- Name: Starfall (settled; see docs/DECISIONS.md)
 
 Edit `docs/DECISIONS.md` and tell Claude Code what changed.
 

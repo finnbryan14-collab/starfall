@@ -1,12 +1,12 @@
 # Product spec (v1)
 
-## What Astrolabe is
+## What Starfall is
 
 A Genshin Impact companion that answers two questions better than anything else: **"Will I get the character I want?"** and **"Is this artifact worth my resin?"** It also keeps the daily timers in one place so it's worth opening every day.
 
 **Who it's for (v1):** Finn and his friends. Installable on a phone, usable on a laptop. No accounts.
 
-**What makes it different:** it answers in probabilities, not just counts. Other planners tell you that you'll have 108 pulls; Astrolabe tells you that's a 72.9% chance at Skirk and that 18 more pulls gets you to 90%.
+**What makes it different:** it answers in probabilities, not just counts. Other planners tell you that you'll have 108 pulls; Starfall tells you that's a 72.9% chance at Skirk and that 18 more pulls gets you to 90%.
 
 ## v1 features
 
@@ -70,4 +70,4 @@ These were chosen so work could start; change them in `docs/DECISIONS.md` if the
 1. Installable web app (PWA) rather than a native app.
 2. Built for Finn and friends first, not a public launch.
 3. America server (daily reset at 04:00 UTC−5).
-4. Working name "Astrolabe".
+4. Name: Starfall (settled 2026-09-28; see docs/DECISIONS.md).

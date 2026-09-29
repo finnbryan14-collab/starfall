@@ -1,4 +1,4 @@
-# Astrolabe
+# Starfall
 
 A Genshin Impact companion app: a probability-first wish planner, an artifact keep-or-trash scorer with a resin estimator, and daily timers. Installable web app, local-first, built for Finn and friends.
 

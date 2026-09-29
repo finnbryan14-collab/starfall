@@ -1,6 +1,6 @@
 # Design direction
 
-Astrolabe should feel like a navigator's instrument for the night sky: calm, precise, and a little beautiful. The app answers questions about chance ("will I get her?", "is this worth leveling?"), so the design treats probability as the main character and everything else as quiet support.
+Starfall should feel like the moment a wish lands: calm and precise, with one bright thing falling through a quiet night sky. The app answers questions about chance ("will I get her?", "is this worth leveling?"), so the design treats probability as the main character and everything else as quiet support.
 
 Open `design/preview.html` in a browser before building any screen. It is the visual reference for this document, with working math and the real motion. When this document and the preview disagree, this document wins; update the preview afterward.
 
@@ -56,7 +56,7 @@ Group content with space and hairline rules (`--rule`), not boxes. The only fill
 ```
 Mobile (390 wide)                     Desktop (≥1024)
 ┌──────────────────────────┐          ┌─────┬──────────────────┬──────────────┐
-│ Astrolabe          (UID) │          │     │ Skirk returns    │ Your stash   │
+│ Starfall           (UID) │          │     │ Skirk returns    │ Your stash   │
 │                          │          │ ✦   │ Oct 13           │ Primogems    │
 │ Skirk returns Oct 13     │          │ ◇   │                  │ Fates        │
 │ 72.9%                    │          │ ⧗   │ 72.9%            │ Pity         │
@@ -146,4 +146,4 @@ Plain, specific, sentence case. Answers are sentences a friend would say.
 ## Assets and branding
 
 - The name, wordmark, and icons are original. Do not use HoYoverse logos or UI art.
-- Character portraits and item icons come from Enka.Network's asset URLs or genshin-db, which fan tools commonly use. Show the standard fan-site notice in Account and the footer: "Astrolabe is a fan project and is not affiliated with HoYoverse. Game content and materials are trademarks and copyrights of HoYoverse."
+- Character portraits and item icons come from Enka.Network's asset URLs or genshin-db, which fan tools commonly use. Show the standard fan-site notice in Account and the footer: "Starfall is a fan project and is not affiliated with HoYoverse. Game content and materials are trademarks and copyrights of HoYoverse."

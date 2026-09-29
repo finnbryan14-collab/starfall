@@ -1,6 +1,6 @@
 # Data sources
 
-Astrolabe is local-first. Everything the user enters or imports lives in IndexedDB on their device. The only server code is a few Next.js route handlers that proxy requests the browser can't make directly (CORS, custom User-Agent) and cache responses.
+Starfall is local-first. Everything the user enters or imports lives in IndexedDB on their device. The only server code is a few Next.js route handlers that proxy requests the browser can't make directly (CORS, custom User-Agent) and cache responses.
 
 ## 1. Account import: Enka.Network (UID showcase)
 
@@ -9,7 +9,7 @@ Astrolabe is local-first. Everything the user enters or imports lives in Indexed
 **Endpoint:** `GET https://enka.network/api/uid/{uid}/` (full docs: https://github.com/EnkaNetwork/API-docs/blob/master/api.md). Add `?info` for the profile only.
 
 **Rules:**
-- Call it from `src/app/api/enka/[uid]/route.ts`, not the browser. Send a descriptive `User-Agent` (e.g. `Astrolabe/0.1 (+contact url)`).
+- Call it from `src/app/api/enka/[uid]/route.ts`, not the browser. Send a descriptive `User-Agent` (e.g. `Starfall/0.1 (+contact url)`).
 - The response includes `ttl` (seconds). Cache by UID until it expires; don't refetch before then. Show "Updated 3 min ago" and a disabled refresh button with the remaining wait.
 - Handle errors by status with a plain-language message each: bad UID format, UID not found, game maintenance, rate limited, server error. Confirm the exact status codes against the docs when implementing.
 - Validate UIDs as 9 or 10 digits (newer accounts have 10-digit UIDs starting with 18).
