@@ -33,6 +33,8 @@ export type ArtifactsState = {
   resin: ResinEstimate | null;
   /** True while the shown answer does not yet match the current input. */
   pending: boolean;
+  /** Set when the worker could not produce an answer. */
+  error: Error | null;
 };
 
 export function useArtifacts(
@@ -43,6 +45,7 @@ export function useArtifacts(
   const workerRef = useRef<Worker | null>(null);
   const requestId = useRef(0);
   const [answer, setAnswer] = useState<Answer | null>(null);
+  const [failure, setFailure] = useState<Error | null>(null);
 
   // Owned for the component's lifetime; started lazily by the run below so
   // there is no render just to record that it exists.
@@ -58,7 +61,12 @@ export function useArtifacts(
 
   useEffect(() => {
     if (!workerRef.current) {
-      workerRef.current = new Worker(new URL('./artifacts.worker.ts', import.meta.url));
+      //  is required: the bundler emits an ESM worker, and a
+      // classic worker silently never runs it — no error, just a call that
+      // never resolves.
+      workerRef.current = new Worker(new URL('./artifacts.worker.ts', import.meta.url), {
+        type: 'module',
+      });
       apiRef.current = Comlink.wrap<ArtifactsWorkerApi>(workerRef.current);
     }
     const api = apiRef.current;
@@ -76,8 +84,12 @@ export function useArtifacts(
         // A newer request started while this one ran: its answer wins.
         if (cancelled || id !== requestId.current) return;
         setAnswer({ key, score, resin });
-      } catch {
-        // Leave the previous answer showing rather than blanking the screen.
+      } catch (error) {
+        // Keep the previous answer on screen rather than blanking it, but do
+        // not swallow the reason: a worker that fails silently looks exactly
+        // like one that is merely slow.
+        if (cancelled || id !== requestId.current) return;
+        setFailure(error instanceof Error ? error : new Error(String(error)));
       }
     })();
 
@@ -92,6 +104,7 @@ export function useArtifacts(
   return {
     score: answer?.score ?? null,
     resin: answer?.resin ?? null,
-    pending: answer?.key !== key,
+    pending: answer?.key !== key && !failure,
+    error: failure,
   };
 }

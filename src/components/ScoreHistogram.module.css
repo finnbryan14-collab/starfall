@@ -1,0 +1,48 @@
+.figure {
+  margin: var(--s-5) 0 0;
+}
+
+.svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.bar {
+  fill: var(--rule);
+}
+
+/* Gold is the thing you want (DESIGN.md), so only bins past the goal get it. */
+.barHit {
+  fill: var(--gold);
+}
+
+.base {
+  stroke: var(--rule);
+  stroke-width: 1.25;
+}
+
+.axis {
+  fill: var(--faint);
+  font-size: var(--t-xs);
+  font-family: var(--font-ui);
+}
+
+.goalLine {
+  stroke: var(--starlight);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.goalText {
+  fill: var(--starlight);
+  font-size: var(--t-xs);
+  font-family: var(--font-ui);
+}
+
+.caption {
+  font-size: var(--t-xs);
+  color: var(--faint);
+  margin-top: var(--s-2);
+}

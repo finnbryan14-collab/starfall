@@ -1,0 +1,118 @@
+.piece {
+  margin: var(--s-5) 0 0;
+  border-top: 1px solid var(--rule);
+}
+
+.pieceHead {
+  padding: var(--s-3) 0;
+}
+
+.pieceName {
+  margin: 0;
+  font-weight: 600;
+}
+
+.pieceMeta {
+  margin: 0;
+  font-size: var(--t-sm);
+  color: var(--dim);
+}
+
+.stars {
+  color: var(--gold);
+  letter-spacing: 1px;
+}
+
+.subs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sub {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: var(--s-3);
+  min-height: var(--tap);
+  padding: 6px 0 8px;
+  border-top: 1px solid var(--rule);
+}
+
+.value {
+  display: flex;
+  align-items: baseline;
+  gap: 1px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Native select: the fastest control on a phone, and the picker only ever
+   offers stats this piece could actually have. */
+.select {
+  min-height: var(--tap);
+  background: var(--well);
+  color: inherit;
+  font: inherit;
+  border: 1px solid transparent;
+  border-radius: var(--r-input);
+  padding: 0 var(--s-2);
+  max-width: 100%;
+}
+
+.select:disabled {
+  opacity: 0.6;
+}
+
+.number {
+  width: 5ch;
+  min-height: var(--tap);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  color: inherit;
+  font: inherit;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.verdict_keep {
+  color: var(--keep);
+}
+
+.verdict_maybe {
+  color: var(--maybe);
+}
+
+.verdict_feed {
+  color: var(--feed);
+}
+
+.primary {
+  min-height: 48px;
+  padding: 0 18px;
+  border-radius: var(--r-input);
+  border: 1px solid var(--gold);
+  background: var(--gold);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.quiet {
+  min-height: 48px;
+  padding: 0 18px;
+  border-radius: var(--r-input);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--dim);
+  font: inherit;
+  cursor: pointer;
+}
+
+.rollNote {
+  font-size: var(--t-sm);
+  color: var(--dim);
+  margin: var(--s-3) 0 0;
+  max-width: 44ch;
+}
