@@ -31,12 +31,12 @@ export function PlanScreen() {
   // One clock reading per mount, so the projection does not shift under the
   // animation while the player is reading it.
   const now = useMemo(() => new Date(), []);
-  const { plan, ready, result, update } = usePlan(now);
+  const { plan, ready, result, balance, update } = usePlan(now);
   const [sheetOpen, setSheetOpen] = useState(false);
   // The chart drives the numeral, so the redraw and the count are one moment.
   const numeralRef = useRef<HTMLSpanElement>(null);
 
-  if (!ready || !plan || !result) {
+  if (!ready || !plan || !result || !balance) {
     // Holds the layout still rather than flashing a zero answer that then
     // jumps to the stored one.
     return <section className={screen.panel} aria-busy="true" />;
@@ -55,6 +55,10 @@ export function PlanScreen() {
   // A stored plan outlives its banner. Once the date is behind us the income
   // projection is legitimately zero, which reads as a bug unless it is said.
   const datePassed = targetDate !== null && targetDate.getTime() <= now.getTime();
+
+  const confirmedLabel = DATE_FORMAT.format(new Date(plan.balanceConfirmedAt));
+  // Nothing to explain until the derived balance differs from what was typed.
+  const ledgerMoved = balance.earnedPrimogems > 0 || balance.pullsSince > 0;
 
   return (
     <section className={screen.panel} aria-labelledby="plan-title">
@@ -133,13 +137,13 @@ export function PlanScreen() {
         <div className={screen.ledger}>
           <StepperRow
             label="Primogems"
-            value={plan.primogems}
+            value={balance.primogems}
             onChange={(primogems) => update({ primogems })}
             step={160}
           />
           <StepperRow
             label="Intertwined Fates"
-            value={plan.fates}
+            value={balance.fates}
             onChange={(fates) => update({ fates })}
             max={9_999}
           />
@@ -189,6 +193,30 @@ export function PlanScreen() {
             max={999_999}
           />
         </div>
+
+        {/*
+          The balance is carried forward, not retyped, so the screen has to
+          show its working: where it started, what it added, what it took off.
+          An unexplained number the player did not enter is worse than no
+          number at all.
+        */}
+        {balance.overdrawn ? (
+          <p className={screen.caption} role="alert">
+            Those {formatNumber(balance.pullsSince)} pulls cost more than you had on{' '}
+            {confirmedLabel}. Enter your primogems to put it right.
+          </p>
+        ) : ledgerMoved ? (
+          <p className={screen.caption}>
+            Carried forward from {confirmedLabel}
+            {balance.earnedPrimogems > 0
+              ? `, +${formatNumber(balance.earnedPrimogems)} earned`
+              : ''}
+            {balance.pullsSince > 0
+              ? `, ${formatNumber(balance.pullsSince)} ${balance.pullsSince === 1 ? 'pull' : 'pulls'} spent`
+              : ''}
+            . Edit it if it&rsquo;s drifted.
+          </p>
+        ) : null}
 
         <div className={screen.actions}>
           <button type="button" className={screen.sheetButton} onClick={() => setSheetOpen(true)}>

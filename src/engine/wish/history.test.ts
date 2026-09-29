@@ -3,11 +3,14 @@ import { describe, expect, it } from 'vitest';
 import { EXPECTED_PULLS_PER_5STAR } from '@/engine/wish/pity';
 import {
   BANNER_TYPES,
+  INTERTWINED_BANNERS,
   isStandardCharacter,
   mergeWishes,
   sortChronologically,
   STANDARD_5STAR_CHARACTERS,
   summariseCharacterHistory,
+  wishTimeMs,
+  wishTimeMsOrNull,
   type Wish,
 } from '@/engine/wish/history';
 
@@ -214,5 +217,45 @@ describe('sortChronologically', () => {
     const before = wishes.map((w) => w.id);
     sortChronologically(wishes);
     expect(wishes.map((w) => w.id)).toEqual(before);
+  });
+});
+
+describe('wishTimeMs', () => {
+  it('reads the timestamp in server-local time', () => {
+    // America is UTC-5, so 07:30 on the server is 12:30 UTC.
+    expect(wishTimeMs('2026-09-01 07:30:00')).toBe(Date.UTC(2026, 8, 1, 12, 30, 0));
+  });
+
+  it('honours a different server offset', () => {
+    // Europe is UTC+1.
+    expect(wishTimeMs('2026-09-01 07:30:00', 1)).toBe(Date.UTC(2026, 8, 1, 6, 30, 0));
+  });
+
+  it('accepts the ISO-style separator too', () => {
+    expect(wishTimeMs('2026-09-01T07:30:00')).toBe(wishTimeMs('2026-09-01 07:30:00'));
+  });
+
+  it('refuses a timestamp it does not recognise', () => {
+    // Silently returning NaN would drop the pull from every count that uses it.
+    expect(() => wishTimeMs('01/09/2026')).toThrow(RangeError);
+    expect(() => wishTimeMs('')).toThrow(RangeError);
+  });
+
+  it('has a nullable form for callers that must keep going', () => {
+    expect(wishTimeMsOrNull('2026-09-01 07:30:00')).toBe(Date.UTC(2026, 8, 1, 12, 30, 0));
+    expect(wishTimeMsOrNull('')).toBeNull();
+    expect(wishTimeMsOrNull('not a time')).toBeNull();
+  });
+});
+
+describe('INTERTWINED_BANNERS', () => {
+  it('covers the banners that spend Intertwined Fate and no others', () => {
+    expect(INTERTWINED_BANNERS).toContain(BANNER_TYPES.character);
+    expect(INTERTWINED_BANNERS).toContain(BANNER_TYPES.character2);
+    expect(INTERTWINED_BANNERS).toContain(BANNER_TYPES.weapon);
+    expect(INTERTWINED_BANNERS).toContain(BANNER_TYPES.chronicled);
+    // Acquaint Fate banners: their pulls never touch the planner's budget.
+    expect(INTERTWINED_BANNERS).not.toContain(BANNER_TYPES.beginner);
+    expect(INTERTWINED_BANNERS).not.toContain(BANNER_TYPES.standard);
   });
 });

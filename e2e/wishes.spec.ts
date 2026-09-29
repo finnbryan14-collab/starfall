@@ -16,7 +16,20 @@ const WISH_URL =
   'https://gs.hoyoverse.com/genshin/event/e20190909gacha-v3/index.html' +
   `?authkey_ver=1&sign_type=2&lang=en&authkey=${AUTHKEY}&region=os_usa&game_biz=hk4e_global`;
 
-type Row = { id: string; gacha_type: string; rank_type: string; name: string };
+type Row = {
+  id: string;
+  gacha_type: string;
+  rank_type: string;
+  name: string;
+  /** Server-local, with no zone — exactly how the real log reports it. */
+  time: string;
+};
+
+/** Minutes back from a fixed past instant, so the log reads newest first. */
+function logTime(minutesBack: number): string {
+  const at = new Date(Date.UTC(2026, 8, 20, 17, 0, 0) - minutesBack * 60_000);
+  return at.toISOString().slice(0, 19).replace('T', ' ');
+}
 
 /** Newest first, as the real API returns them. */
 function buildLog(): Row[] {
@@ -24,7 +37,13 @@ function buildLog(): Row[] {
   let id = 2000;
 
   const push = (rank: string, name: string) => {
-    rows.push({ id: String(id--), gacha_type: '301', rank_type: rank, name });
+    rows.push({
+      id: String(id--),
+      gacha_type: '301',
+      rank_type: rank,
+      name,
+      time: logTime(rows.length),
+    });
   };
 
   // Reading newest to oldest: 22 filler, then Skirk (a win), then 70 filler,
@@ -122,9 +141,21 @@ test.describe('Wish history import', () => {
     const rows: Row[] = [];
     let id = 500;
     for (let i = 0; i < 5; i++) {
-      rows.push({ id: String(id--), gacha_type: '301', rank_type: '3', name: 'Cool Steel' });
+      rows.push({
+        id: String(id--),
+        gacha_type: '301',
+        rank_type: '3',
+        name: 'Cool Steel',
+        time: logTime(rows.length),
+      });
     }
-    rows.push({ id: String(id--), gacha_type: '301', rank_type: '5', name: 'Qiqi' });
+    rows.push({
+      id: String(id--),
+      gacha_type: '301',
+      rank_type: '5',
+      name: 'Qiqi',
+      time: logTime(rows.length),
+    });
 
     await mockGachaLog(page, rows);
     await page.goto('/account');

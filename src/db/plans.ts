@@ -33,6 +33,7 @@ export type NewPlanInput = {
   guaranteed?: boolean;
   welkinDaysRemaining?: number;
   endgameCompletion?: number;
+  balanceConfirmedAt?: number;
   incomeOverride?: number | null;
   assumptions?: IncomeAssumptions;
   enabled?: IncomeToggles;
@@ -57,6 +58,7 @@ export function makePlan(input: NewPlanInput = {}): Plan {
     constellation: input.constellation ?? 0,
     primogems: input.primogems ?? 0,
     fates: input.fates ?? 0,
+    balanceConfirmedAt: input.balanceConfirmedAt ?? now,
     pity: input.pity ?? 0,
     guaranteed: input.guaranteed ?? false,
     welkinDaysRemaining: input.welkinDaysRemaining ?? 0,
@@ -70,6 +72,20 @@ export function makePlan(input: NewPlanInput = {}): Plan {
 }
 
 /**
+ * Fills in fields added after a plan was stored.
+ *
+ * `balanceConfirmedAt` arrived with the ledger, so a plan written before it has
+ * no anchor time. `updatedAt` stands in: it is the last moment the player
+ * touched the plan at all, which is the shortest defensible window and so
+ * credits the least income.
+ */
+function normalise(plan: Plan): Plan {
+  return plan.balanceConfirmedAt
+    ? plan
+    : { ...plan, balanceConfirmedAt: plan.updatedAt || plan.createdAt };
+}
+
+/**
  * Plans, most recently updated first.
  *
  * `updatedAt` is millisecond-resolution, so several writes can land on the same
@@ -78,14 +94,15 @@ export function makePlan(input: NewPlanInput = {}): Plan {
  * the order is always total and stable.
  */
 export async function listPlans(): Promise<Plan[]> {
-  const plans = await db.plans.toArray();
+  const plans = (await db.plans.toArray()).map(normalise);
   return plans.sort(
     (a, b) => b.updatedAt - a.updatedAt || b.createdAt - a.createdAt || a.id.localeCompare(b.id),
   );
 }
 
 export async function getPlan(id: string): Promise<Plan | undefined> {
-  return db.plans.get(id);
+  const plan = await db.plans.get(id);
+  return plan ? normalise(plan) : undefined;
 }
 
 export async function savePlan(plan: Plan): Promise<Plan> {

@@ -98,6 +98,24 @@ Income sources (user can toggle and override each):
 
 Patch cadence: versions run about six weeks in two ~three-week banner phases (7.1 launched Sep 23, 2026; phase 2 starts Oct 13). Store known banner windows in `src/engine/calendar/banners.ts`, also with sources.
 
+### Keeping the balance current (the ledger)
+
+No API reports a primogem balance, so it has to be typed at least once. It does not have to be typed twice: income is the projection above, and spending is in the wish history that is already imported.
+
+    balance(now) = confirmed + income(confirmed → now) − 160 × pulls since confirmed
+
+The confirmed pair (primogems, fates, and the instant) is an **anchor** and is never overwritten. Everything shown is derived from it, so a wrong answer is traceable to either the anchor or the assumptions rather than to a figure that has been silently mutated. Typing a balance re-anchors it at that moment.
+
+Rules the implementation follows (`src/engine/ledger/balance.ts`):
+
+- Wishing spends Intertwined Fates first; primogems are only converted when those run out, at 160 each.
+- Only banners that take **Intertwined Fate** count: character (301), character-2 (400), weapon (302) and Chronicled Wish (500). Beginners' (100) and Standard (200) take Acquaint Fate, which is not part of a wish budget.
+- Gacha-log timestamps are **server-local with no zone**, so they are read at the server's UTC offset. Read as UTC, an America account's pulls land five hours early and can fall on the wrong side of the anchor or a reset.
+- Income is rounded **down**. Overstating a balance promises pulls the player cannot afford; understating it only withholds one they can.
+- A pull whose timestamp will not parse counts as spent, for the same reason.
+- Welkin is paid for the whole backfilled window: the plan stores days remaining from _now_, so over a window already elapsed the player plainly had at least that many.
+- If the spend outruns the anchor plus income, the balance clamps at zero and the screen says the anchor is wrong rather than showing a confident zero.
+
 ---
 
 ## 4. Artifacts
@@ -204,3 +222,6 @@ Timers compute from a stored `setAt` timestamp and the rule, never from a tickin
 - Domain drop rates and 4-line chances: https://news.bittopup.com/news/genshin-impact-loot-scaling-guide-ar45-drop-rates
 - Sanctifying Elixir 5.5 change: https://www.sportskeeda.com/esports/genshin-impact-5-5-introduce-new-artifacts-qol-feature
 - Banner calendar (7.1): https://game8.co/games/Genshin-Impact/archives/305012
+- Intertwined Fate price and use: https://genshin-impact.fandom.com/wiki/Intertwined_Fate
+- Acquaint Fate is for Standard and Beginners' Wish: https://genshin-impact.fandom.com/wiki/Acquaint_Fate
+- Chronicled Wish takes Intertwined Fate: https://game8.co/games/Genshin-Impact/archives/446618

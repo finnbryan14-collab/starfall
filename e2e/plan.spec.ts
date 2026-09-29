@@ -1,6 +1,13 @@
 import { expect, test } from '@playwright/test';
 
-import { enterPreviewExample, readAnswer, setStepper } from './helpers';
+import {
+  backdateBalance,
+  enterPreviewExample,
+  readAnswer,
+  readStepper,
+  setStepper,
+  waitForPlanSave,
+} from './helpers';
 
 /**
  * The Plan screen end to end.
@@ -125,5 +132,47 @@ test.describe('Plan screen', () => {
     await pity.press('ArrowUp');
     await pity.press('ArrowUp');
     await expect(pity).toHaveValue('22');
+  });
+
+  /**
+   * ROADMAP Phase 4: the Plan screen opens with a balance that is right
+   * without touching it, and says how stale it is.
+   */
+  test('carries the balance forward and shows its working', async ({ page }) => {
+    await enterPreviewExample(page);
+    const confirmed = await readStepper(page, 'Primogems');
+    expect(confirmed).toBe(11_200);
+
+    // Nothing to explain while the confirmation is the balance.
+    await expect(page.getByText(/Carried forward from/)).toHaveCount(0);
+
+    await backdateBalance(page, 10);
+    await page.reload();
+    await expect(page.getByRole('spinbutton', { name: 'Primogems' })).toBeVisible();
+
+    const carried = await readStepper(page, 'Primogems');
+    expect(carried, 'ten days of income should have been added').toBeGreaterThan(confirmed);
+
+    const line = page.getByText(/Carried forward from/);
+    await expect(line).toBeVisible();
+    await expect(line).toContainText(`+${(carried - confirmed).toLocaleString('en-US')} earned`);
+  });
+
+  test('re-anchors when the balance is typed again', async ({ page }) => {
+    await enterPreviewExample(page);
+    await backdateBalance(page, 10);
+    await page.reload();
+    await expect(page.getByText(/Carried forward from/)).toBeVisible();
+
+    // Typing is a fresh confirmation, so there is nothing left to carry.
+    await setStepper(page, 'Primogems', 5_000);
+    await expect(page.getByText(/Carried forward from/)).toHaveCount(0);
+    expect(await readStepper(page, 'Primogems')).toBe(5_000);
+
+    await waitForPlanSave(page);
+    await page.reload();
+    await expect(page.getByRole('spinbutton', { name: 'Primogems' })).toBeVisible();
+    // Reloading must not re-apply the ten days that were already counted.
+    expect(await readStepper(page, 'Primogems')).toBe(5_000);
   });
 });

@@ -22,8 +22,16 @@ export type Plan = {
   targetDate: string;
   /** Constellation goal: 0 is C0, 6 is C6. */
   constellation: number;
+  /**
+   * The primogems the player last confirmed holding — an anchor, not a running
+   * total. What the screen shows is derived from this plus income earned and
+   * pulls made since (src/engine/ledger).
+   */
   primogems: number;
+  /** Intertwined Fates at the same confirmation. */
   fates: number;
+  /** Epoch ms of that confirmation, for carrying the balance forward. */
+  balanceConfirmedAt: number;
   pity: number;
   guaranteed: boolean;
   welkinDaysRemaining: number;

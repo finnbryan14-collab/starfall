@@ -1,3 +1,4 @@
+import { AMERICA_UTC_OFFSET } from '../time';
 import { EXPECTED_PULLS_PER_5STAR } from './pity';
 
 /**
@@ -29,6 +30,57 @@ export const BANNER_TYPES = {
  * which no synthetic fixture can provide.
  */
 export const CHARACTER_BANNERS: string[] = [BANNER_TYPES.character, BANNER_TYPES.character2];
+
+/**
+ * Banners that spend Intertwined Fate, and so draw on the planner's budget.
+ *
+ * The beginner and standard banners take Acquaint Fate instead, which is not
+ * part of a wish plan — counting those pulls would quietly shrink the balance.
+ *
+ *   Acquaint Fate is for Standard and Beginners' Wish:
+ *     https://genshin-impact.fandom.com/wiki/Acquaint_Fate
+ *   Chronicled Wish takes Intertwined Fate, “like in the limited Character
+ *   Event-Wish banners and Epitome Invocation”:
+ *     https://game8.co/games/Genshin-Impact/archives/446618
+ *   verifiedAt: 2026-09-29
+ */
+export const INTERTWINED_BANNERS: string[] = [
+  BANNER_TYPES.character,
+  BANNER_TYPES.character2,
+  BANNER_TYPES.weapon,
+  BANNER_TYPES.chronicled,
+];
+
+/**
+ * A gacha log timestamp as an instant.
+ *
+ * The API reports `2026-09-01 07:30:00` with no zone: it is the *server's*
+ * local time, so an America account's 07:30 is 12:30 UTC. Reading it as UTC
+ * would place every pull five hours early, which is enough to sort a pull onto
+ * the wrong side of a reset or a confirmation.
+ */
+export function wishTimeMs(time: string, utcOffset = AMERICA_UTC_OFFSET): number {
+  const parsed = wishTimeMsOrNull(time, utcOffset);
+  if (parsed === null) throw new RangeError(`Unrecognised wish time: ${time}`);
+  return parsed;
+}
+
+/**
+ * The same, returning null instead of throwing.
+ *
+ * For callers that have to keep going: `time` is best-effort in wish-import,
+ * which stores an empty string rather than dropping a pull whose other fields
+ * are sound, so a single odd row must not take a screen down with it.
+ */
+export function wishTimeMsOrNull(time: string, utcOffset = AMERICA_UTC_OFFSET): number | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})$/.exec(
+    typeof time === 'string' ? time.trim() : '',
+  );
+  if (!match) return null;
+
+  const [, year, month, day, hour, minute, second] = match.map(Number);
+  return Date.UTC(year, month - 1, day, hour - utcOffset, minute, second);
+}
 
 /**
  * 5-star characters on the standard banner.
