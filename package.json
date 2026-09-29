@@ -15,7 +15,8 @@
     "perf": "vitest run --config vitest.perf.config.mts",
     "start:e2e": "cross-env NEXT_PUBLIC_ENABLE_DEV_PAGES=1 next start -p 3100",
     "build:e2e": "cross-env NEXT_PUBLIC_ENABLE_DEV_PAGES=1 next build",
-    "build:data": "node --experimental-strip-types scripts/build-enka-map.mts"
+    "build:data": "node --experimental-strip-types scripts/build-enka-map.mts && node --experimental-strip-types scripts/build-banners.mts",
+    "build:banners": "node --experimental-strip-types scripts/build-banners.mts"
   },
   "dependencies": {
     "animejs": "^4.5.0",

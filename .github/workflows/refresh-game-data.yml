@@ -1,0 +1,77 @@
+name: Refresh game data
+
+# Genshin ships a patch about every six weeks, and banner phases turn over
+# every three. Weekly is often enough to catch both without churn.
+#
+# This opens a pull request rather than pushing to the branch: the generated
+# data decides every plan's target date, and a bad upstream change should be
+# reviewed rather than deployed. The build and the full test suite run against
+# the refreshed data first, so a source that changes format fails here instead
+# of in front of a player.
+on:
+  schedule:
+    - cron: '0 7 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Enable pnpm
+        run: corepack enable pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Regenerate character map and banner calendar
+        run: pnpm build:data
+
+      - name: Check whether anything actually changed
+        id: changed
+        run: |
+          if git diff --quiet -- src/data; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git diff --stat -- src/data
+          fi
+
+      # The generated data feeds the engine, so it has to survive the suite
+      # before anyone is asked to look at it.
+      - name: Verify the refreshed data
+        if: steps.changed.outputs.changed == 'true'
+        run: |
+          pnpm lint
+          pnpm typecheck
+          pnpm test
+
+      - name: Open a pull request
+        if: steps.changed.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: chore/refresh-game-data
+          title: 'Refresh game data'
+          commit-message: 'Refresh generated character map and banner calendar'
+          body: |
+            Automated refresh of `src/data/` from upstream sources.
+
+            - Characters and icons from Enka.Network's store files
+            - Banner schedules from paimon.moe (MIT)
+
+            Lint, typecheck and the unit suite all passed against this data.
+
+            Worth a glance at the diff before merging: the banner calendar sets
+            every plan's default target date, and `CURATED_BANNER_PHASES` in
+            `src/engine/calendar/banners.ts` may now contain entries the
+            generated source has caught up with. Those can be deleted, so each
+            value has one obvious home.
+          labels: data

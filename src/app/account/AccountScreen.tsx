@@ -4,7 +4,14 @@ import { useMemo, useState } from 'react';
 
 import screen from '@/components/screen.module.css';
 import { characterIconUrl, lookupCharacter } from '@/data/enka-map';
+import {
+  BANNERS_GENERATED_AT,
+  bannerDataAgeDays,
+  currentPhase,
+  nextPhase,
+} from '@/engine/calendar/banners';
 import { ENKA_FAILURE_COPY, hasShowcase } from '@/lib/enka';
+import { useMountedNow } from '@/lib/use-now';
 
 import styles from './AccountScreen.module.css';
 import { useEnkaProfile } from './useEnkaProfile';
@@ -67,6 +74,17 @@ export function AccountScreen() {
   const nickname = profile ? playerName(profile.data) : null;
   const showcaseEmpty = profile !== null && !hasShowcase(profile.data);
   const cooldownSeconds = Math.ceil(cooldownMs / 1000);
+
+  /**
+   * Past the last known phase the planner is extrapolating rather than
+   * reporting, which is worth saying out loud.
+   *
+   * The clock is read after mount rather than during render — see
+   * useMountedNow — so the prerendered HTML cannot carry the build clock.
+   */
+  const now = useMountedNow();
+  const dataAgeDays = now === null ? null : bannerDataAgeDays(now);
+  const calendarRunOut = now !== null && currentPhase(now) === null && nextPhase(now) === null;
 
   // The UID the button would submit. Refreshing the one already loaded is
   // blocked during Enka's TTL, but typing a different UID is always allowed —
@@ -217,9 +235,26 @@ export function AccountScreen() {
           Export everything as one JSON file, or bring a backup back in.
         </p>
 
+        <h2 className={screen.sec}>Game data</h2>
+        <p className={screen.body}>
+          Banner dates and character names come from Enka.Network and paimon.moe, refreshed weekly.
+          Last refreshed <strong>{BANNERS_GENERATED_AT}</strong>
+          {dataAgeDays !== null && dataAgeDays > 0
+            ? `, ${dataAgeDays} ${dataAgeDays === 1 ? 'day' : 'days'} ago`
+            : ''}
+          .
+        </p>
+        {calendarRunOut ? (
+          <p className={styles.failure} role="alert">
+            The banner calendar has run out, so target dates past today are guesses. A refresh
+            should bring the next patch in.
+          </p>
+        ) : null}
+
         <p className={screen.notice}>
           Starfall is a fan project and is not affiliated with HoYoverse. Game content and materials
-          are trademarks and copyrights of HoYoverse.
+          are trademarks and copyrights of HoYoverse. Banner data from paimon.moe, used under the
+          MIT licence.
         </p>
       </div>
     </section>

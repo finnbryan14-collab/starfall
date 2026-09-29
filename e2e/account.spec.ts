@@ -163,4 +163,18 @@ test.describe('Account screen', () => {
     await page.goto('/account');
     await expect(page.getByText(/not affiliated with HoYoverse/)).toBeVisible();
   });
+
+  /**
+   * The banner calendar is generated from a fan source on a weekly cron, so it
+   * can quietly fall behind a patch. Saying when it was refreshed is what lets
+   * a player tell a stale target date from a wrong one.
+   */
+  test('says when the game data was last refreshed', async ({ page }) => {
+    await page.goto('/account');
+
+    const line = page.getByText(/Last refreshed/);
+    await expect(line).toBeVisible();
+    await expect(line).toContainText(/\d{4}-\d{2}-\d{2}/);
+    await expect(line).toContainText(/paimon\.moe/);
+  });
 });

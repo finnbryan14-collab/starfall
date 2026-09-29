@@ -52,6 +52,9 @@ export function PlanScreen() {
 
   const ninety = result.targets.find((t) => t.quantile === 0.9);
   const empty = result.pulls === 0;
+  // A stored plan outlives its banner. Once the date is behind us the income
+  // projection is legitimately zero, which reads as a bug unless it is said.
+  const datePassed = targetDate !== null && targetDate.getTime() <= now.getTime();
 
   return (
     <section className={screen.panel} aria-labelledby="plan-title">
@@ -114,6 +117,13 @@ export function PlanScreen() {
                 {formatNumber(ninety.morePrimogems)} primogems) gets you to 90% odds.
               </>
             )}
+          </p>
+        ) : null}
+
+        {datePassed ? (
+          <p className={screen.hint}>
+            {dateLabel} has passed, so this counts only what you hold now. Pick a later date to add
+            the income you&rsquo;ll earn.
           </p>
         ) : null}
       </div>

@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
+import { GENERATED_BANNER_PHASES } from '@/data/banners-generated';
 import {
   BANNER_PHASES,
+  BANNERS_GENERATED_AT,
+  bannerDataAgeDays,
+  CURATED_BANNER_PHASES,
   currentPhase,
   defaultTargetDate,
   findCharacter,
@@ -44,15 +48,46 @@ describe('banner data', () => {
     }
   });
 
-  it('has no gaps or overlaps between consecutive phases', () => {
-    // One phase ends exactly where the next begins: a banner switchover is an
-    // instant, not a window with dead time in it.
+  it('never has two phases running at the same time', () => {
+    // Contiguity does NOT hold — real history has gaps between versions, 50 of
+    // 88 consecutive pairs in the generated data. Overlap is the invariant that
+    // actually matters: two phases at once would make currentPhase ambiguous.
     for (let i = 1; i < BANNER_PHASES.length; i++) {
-      const previousEnd = phaseEnd(BANNER_PHASES[i - 1]).getTime();
-      const nextStart = phaseStart(BANNER_PHASES[i]).getTime();
-      expect(nextStart, `${BANNER_PHASES[i].version} phase ${BANNER_PHASES[i].phase}`).toBe(
-        previousEnd,
+      const previous = BANNER_PHASES[i - 1];
+      const current = BANNER_PHASES[i];
+      const label = `${current.version} phase ${current.phase}`;
+      expect(phaseStart(current).getTime(), label).toBeGreaterThanOrEqual(
+        phaseEnd(previous).getTime(),
       );
+    }
+  });
+
+  it('has one entry per version and phase', () => {
+    const keys = BANNER_PHASES.map((phase) => `${phase.version}/${phase.phase}`);
+    expect(new Set(keys).size).toBe(keys.length);
+  });
+
+  it('draws on both sources', () => {
+    // If either side vanished, the merge silently became a single source.
+    expect(BANNER_PHASES.some((phase) => phase.origin === 'generated')).toBe(true);
+    expect(BANNER_PHASES.some((phase) => phase.origin === 'curated')).toBe(true);
+  });
+
+  /**
+   * Where the generated data and a hand-checked entry describe the same phase
+   * they must agree. A disagreement means one is wrong, which is worth failing
+   * over rather than silently resolving in the curated entry’s favour.
+   */
+  it('agrees with the generated source wherever both describe a phase', () => {
+    for (const curated of CURATED_BANNER_PHASES) {
+      const generated = GENERATED_BANNER_PHASES.find(
+        (entry) => entry.version === curated.version && entry.phase === curated.phase,
+      );
+      if (!generated) continue;
+
+      const label = `${curated.version} phase ${curated.phase}`;
+      expect(generated.startDate, label).toBe(curated.startDate);
+      expect(generated.endDate, label).toBe(curated.endDate);
     }
   });
 
@@ -158,5 +193,26 @@ describe('defaultTargetDate', () => {
     // Guards the selection rule even while the calendar has one entry each.
     const target = defaultTargetDate('Skirk', utc('2026-09-01T00:00:00Z'))!;
     expect(target.toISOString().slice(0, 10)).toBe('2026-11-03');
+  });
+});
+
+describe('staleness', () => {
+  it('reports how old the generated data is', () => {
+    const generated = new Date(`${BANNERS_GENERATED_AT}T00:00:00Z`);
+    expect(bannerDataAgeDays(generated)).toBe(0);
+    expect(bannerDataAgeDays(new Date(generated.getTime() + 10 * 86_400_000))).toBe(10);
+  });
+
+  it('never reports a negative age from a clock behind the build', () => {
+    const generated = new Date(`${BANNERS_GENERATED_AT}T00:00:00Z`);
+    expect(bannerDataAgeDays(new Date(generated.getTime() - 86_400_000))).toBe(0);
+  });
+
+  it('knows when the calendar has run out', () => {
+    // Past the last known phase, defaultTargetDate is extrapolating rather
+    // than reporting, and the screen needs to be able to say so.
+    const last = BANNER_PHASES[BANNER_PHASES.length - 1];
+    expect(currentPhase(new Date(phaseEnd(last).getTime() + 86_400_000))).toBeNull();
+    expect(nextPhase(new Date(phaseEnd(last).getTime() + 86_400_000))).toBeNull();
   });
 });

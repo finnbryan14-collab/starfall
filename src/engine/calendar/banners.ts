@@ -1,26 +1,35 @@
-import { AMERICA_UTC_OFFSET, DAILY_RESET_HOUR } from '../income/project';
+import { GENERATED_BANNER_PHASES, BANNERS_GENERATED_AT } from '@/data/banners-generated';
+
+import { AMERICA_UTC_OFFSET, DAILY_RESET_HOUR } from '../time';
 
 /**
  * Character event banner windows.
  *
- * A version runs about six weeks in two roughly three-week phases. Phase
- * boundaries are day-accurate: the game switches banners partway through the
- * day rather than at the daily reset, and no source publishes the exact
- * instant, so a window here can be a few hours out at its edges. That is
- * immaterial against income of 60 to 150 primogems a day, but it is why
- * `phaseStart`/`phaseEnd` are functions rather than stored instants — the
- * approximation lives in one place.
+ * Two sources, merged, because each lags in a different way:
  *
- * Regenerate each patch. Anything not yet announced is marked 'projected' and
- * carries no character list, so a projected window can never be mistaken for a
- * confirmed lineup.
+ *  - paimon.moe (generated, MIT) carries every banner up to the one currently
+ *    live. It is the only live fan source with schedules — checked 2026-09-29,
+ *    api.genshin.dev was returning 502 and genshin-db states event data is out
+ *    of scope. Refresh it with `pnpm build:banners`.
+ *  - The curated list below carries what has been *announced* but is not yet in
+ *    that data, and anything projected from the six-week cadence. On
+ *    2026-09-29 paimon had 7.1 phase 1 but not phase 2, which was announced.
+ *
+ * Curated entries win on conflict, since they are the ones a human checked. A
+ * test asserts the two agree wherever they overlap: a disagreement means one of
+ * them is wrong and is worth knowing about rather than silently resolving.
+ *
+ * Phase boundaries are day-accurate. The game switches banners partway through
+ * the day and no source publishes the exact instant, so a window can be a few
+ * hours out at its edges — immaterial against 60 to 150 primogems a day.
  */
 
 export type PhaseConfidence = 'announced' | 'projected';
+export type PhaseOrigin = 'generated' | 'curated';
 
 export type BannerPhase = {
   version: string;
-  phase: 1 | 2;
+  phase: number;
   /** Server-local calendar date the phase opens, inclusive. */
   startDate: string;
   /** Server-local calendar date the phase closes, exclusive. */
@@ -28,24 +37,22 @@ export type BannerPhase = {
   /** 5-star characters featured. Empty for a projected phase. */
   featured: string[];
   confidence: PhaseConfidence;
+  origin: PhaseOrigin;
   source: string;
   verifiedAt: string;
   note?: string;
 };
 
 const GAME8_7_1 = 'https://game8.co/games/Genshin-Impact/archives/622056';
+const PAIMON = 'https://github.com/MadeBaruna/paimon-moe';
 
-export const BANNER_PHASES: readonly BannerPhase[] = [
-  {
-    version: '7.1',
-    phase: 1,
-    startDate: '2026-09-23',
-    endDate: '2026-10-13',
-    featured: ['Vesna', 'Vodyanitsa'],
-    confidence: 'announced',
-    source: GAME8_7_1,
-    verifiedAt: '2026-09-28',
-  },
+/**
+ * Hand-checked phases, for what the generated data does not have yet.
+ *
+ * Kept deliberately short. Anything the generated source already covers should
+ * be removed from here, so there is one obvious place a value comes from.
+ */
+export const CURATED_BANNER_PHASES: readonly BannerPhase[] = [
   {
     version: '7.1',
     phase: 2,
@@ -53,9 +60,10 @@ export const BANNER_PHASES: readonly BannerPhase[] = [
     endDate: '2026-11-03',
     featured: ['Skirk', 'Escoffier'],
     confidence: 'announced',
+    origin: 'curated',
     source: GAME8_7_1,
     verifiedAt: '2026-09-28',
-    note: 'Both reruns. This is the banner design/preview.html plans against.',
+    note: 'Both reruns. Announced but not yet in the generated source.',
   },
   {
     version: '7.2',
@@ -64,6 +72,7 @@ export const BANNER_PHASES: readonly BannerPhase[] = [
     endDate: '2026-11-24',
     featured: [],
     confidence: 'projected',
+    origin: 'curated',
     source: GAME8_7_1,
     verifiedAt: '2026-09-28',
     note: 'Dates projected from the six-week cadence. Lineup unannounced.',
@@ -75,11 +84,46 @@ export const BANNER_PHASES: readonly BannerPhase[] = [
     endDate: '2026-12-15',
     featured: [],
     confidence: 'projected',
+    origin: 'curated',
     source: GAME8_7_1,
     verifiedAt: '2026-09-28',
     note: 'Dates projected from the six-week cadence. Lineup unannounced.',
   },
 ];
+
+const key = (version: string, phase: number) => `${version}/${phase}`;
+
+function buildPhases(): BannerPhase[] {
+  const merged = new Map<string, BannerPhase>();
+
+  for (const generated of GENERATED_BANNER_PHASES) {
+    merged.set(key(generated.version, generated.phase), {
+      ...generated,
+      confidence: 'announced',
+      origin: 'generated',
+      source: PAIMON,
+      verifiedAt: BANNERS_GENERATED_AT,
+    });
+  }
+
+  // Curated last, so a human-checked entry replaces a generated one.
+  for (const curated of CURATED_BANNER_PHASES) {
+    merged.set(key(curated.version, curated.phase), curated);
+  }
+
+  return [...merged.values()].sort((a, b) => a.startDate.localeCompare(b.startDate));
+}
+
+export const BANNER_PHASES: readonly BannerPhase[] = buildPhases();
+
+/** When the generated half was last refreshed, for the staleness line. */
+export { BANNERS_GENERATED_AT };
+
+/** Days since the generated banner data was refreshed. */
+export function bannerDataAgeDays(now: Date = new Date()): number {
+  const generated = new Date(`${BANNERS_GENERATED_AT}T00:00:00Z`).getTime();
+  return Math.max(0, Math.floor((now.getTime() - generated) / 86_400_000));
+}
 
 /** `2026-10-13` at the server daily reset, as a UTC instant. */
 function dateToInstant(date: string, utcOffset = AMERICA_UTC_OFFSET): Date {
@@ -152,7 +196,8 @@ export function scheduledCharacters(): string[] {
  * end is the more useful default — you can pull at any point during the banner
  * and you keep earning income throughout it.
  *
- * Picks the soonest banner that has not already closed.
+ * Picks the soonest banner that has not already closed, so a character with a
+ * long rerun history defaults to their next appearance rather than their first.
  */
 export function defaultTargetDate(
   name: string,
