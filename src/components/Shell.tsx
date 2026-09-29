@@ -26,7 +26,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           <span className={styles.sample}>Preview with sample data</span>
         </header>
 
-        <main>{children}</main>
+        <main className={styles.main}>{children}</main>
 
         {/*
           The fan-project notice. On every page rather than only Account:

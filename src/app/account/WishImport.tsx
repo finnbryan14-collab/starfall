@@ -16,6 +16,7 @@ import {
   type CacheReadFailure,
 } from '@/lib/wish-cache-fs';
 import type { ImportProgress } from '@/lib/wish-import';
+import { useHydrated } from '@/lib/use-hydrated';
 import { syncWishes } from '@/lib/wish-sync';
 import { formatNumber } from '@/lib/format';
 
@@ -43,7 +44,13 @@ export function WishImport() {
   const [status, setStatus] = useState<Status>({ kind: 'idle' });
   const [summary, setSummary] = useState<HistorySummary | null>(null);
   const [hasFolder, setHasFolder] = useState(false);
-  const supportsFolder = isFileSystemAccessSupported();
+  /*
+    Checked after hydration, not during render. `showDirectoryPicker` does not
+    exist on the server, so branching on it directly renders one tree into the
+    prerendered HTML and a different one on hydration — React error #418, and
+    the whole subtree is thrown away and rebuilt.
+  */
+  const supportsFolder = useHydrated() && isFileSystemAccessSupported();
 
   useEffect(() => {
     let cancelled = false;

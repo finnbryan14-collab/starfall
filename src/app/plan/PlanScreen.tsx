@@ -36,12 +36,6 @@ export function PlanScreen() {
   // The chart drives the numeral, so the redraw and the count are one moment.
   const numeralRef = useRef<HTMLSpanElement>(null);
 
-  if (!ready || !plan || !result || !balance) {
-    // Holds the layout still rather than flashing a zero answer that then
-    // jumps to the stored one.
-    return <section className={screen.panel} aria-busy="true" />;
-  }
-
   const targetDate = plan.targetDate ? new Date(plan.targetDate) : null;
   const dateLabel = targetDate ? DATE_FORMAT.format(targetDate) : null;
   const title = plan.target
@@ -54,14 +48,23 @@ export function PlanScreen() {
   const empty = result.pulls === 0;
   // A stored plan outlives its banner. Once the date is behind us the income
   // projection is legitimately zero, which reads as a bug unless it is said.
-  const datePassed = targetDate !== null && targetDate.getTime() <= now.getTime();
+  // Gated on `ready` for the same reason the projection is: the prerendered
+  // HTML carries the build clock, and this must read the same in both passes.
+  const datePassed = ready && targetDate !== null && targetDate.getTime() <= now.getTime();
 
   const confirmedLabel = DATE_FORMAT.format(new Date(plan.balanceConfirmedAt));
   // Nothing to explain until the derived balance differs from what was typed.
   const ledgerMoved = balance.earnedPrimogems > 0 || balance.pullsSince > 0;
 
   return (
-    <section className={screen.panel} aria-labelledby="plan-title">
+    /*
+      Rendered in full from the first paint, from an empty plan until the
+      stored one arrives. An empty busy panel held nothing still: the column
+      grew by its own height when the data landed, and the hero numeral only
+      became a paint candidate after hydration. `aria-busy` still says the
+      values are provisional.
+    */
+    <section className={screen.panel} aria-labelledby="plan-title" aria-busy={!ready}>
       <div>
         <AnswerBlock
           title={title}

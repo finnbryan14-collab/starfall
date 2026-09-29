@@ -50,6 +50,10 @@ async function settle(page: Page) {
   await page.evaluate(() => document.fonts.ready);
   // The preview builds its chart and starfield in a module script after load.
   await page.waitForTimeout(600);
+  // Filling the steppers scrolls them into view, so the shot would otherwise
+  // start partway down the page and the two sides would not line up.
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(100);
 }
 
 /**

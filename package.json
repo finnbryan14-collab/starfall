@@ -16,7 +16,8 @@
     "start:e2e": "cross-env NEXT_PUBLIC_ENABLE_DEV_PAGES=1 next start -p 3100",
     "build:e2e": "cross-env NEXT_PUBLIC_ENABLE_DEV_PAGES=1 next build",
     "build:data": "node --experimental-strip-types scripts/build-enka-map.mts && node --experimental-strip-types scripts/build-banners.mts",
-    "build:banners": "node --experimental-strip-types scripts/build-banners.mts"
+    "build:banners": "node --experimental-strip-types scripts/build-banners.mts",
+    "lighthouse": "node --experimental-strip-types scripts/lighthouse.mts"
   },
   "dependencies": {
     "animejs": "^4.5.0",
@@ -49,6 +50,7 @@
     "eslint-config-prettier": "^10.1.8",
     "fake-indexeddb": "^6.2.5",
     "jsdom": "^30.1.1",
+    "lighthouse": "^13.5.0",
     "prettier": "^3.9.9",
     "tailwindcss": "^4",
     "typescript": "^5",

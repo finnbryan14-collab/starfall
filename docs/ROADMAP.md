@@ -50,5 +50,5 @@ Work top to bottom. Each task is small enough for one Claude Code session. Check
 ## Phase 5: Notifications and ship
 
 - [ ] Web Push (VAPID) for "resin full" and "transformer ready": a small scheduled function that sends pushes at the computed times. iOS requires the app to be installed to the home screen. **Done when** a push arrives on Finn's phone.
-- [ ] Deploy to Vercel. Lighthouse: performance ≥ 90, accessibility ≥ 95 on mobile.
+- [ ] Deploy to Vercel. Lighthouse: performance ≥ 90, accessibility ≥ 95 on mobile. **Measured locally against a production build with `pnpm lighthouse`: performance 91–94, accessibility 100, best practices 100, SEO 100 on all four screens. The deploy itself needs Finn's Vercel account.**
 - [ ] Share with friends; collect the three most-wanted features from `docs/BACKLOG.md`.

@@ -29,6 +29,17 @@
   color: var(--dim);
   margin: var(--s-2) 0 0;
   max-width: 36ch;
+  /*
+   * Three lines' worth, reserved.
+   *
+   * This sentence *is* the answer, so it grows the moment the answer arrives —
+   * one line of "Working out where this piece can land." becomes two or three
+   * of the real verdict, and the whole screen below it jumps. Measured at
+   * 0.169 CLS on /artifacts, which alone cost four points of performance.
+   * Reserving the taller state costs a little whitespace under a short
+   * sentence and nothing else.
+   */
+  min-height: calc(3 * 1.5em);
 }
 
 .lede strong {

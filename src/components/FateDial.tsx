@@ -242,23 +242,33 @@ export function FateDial({ curve, pulls, chance, numeralRef, target }: FateDialP
       </figcaption>
 
       {/* The chart's data, for anyone not reading the picture (DESIGN.md). */}
-      <table className="sr-only">
-        <caption>{description}</caption>
-        <thead>
-          <tr>
-            <th scope="col">Pulls</th>
-            <th scope="col">Chance</th>
-          </tr>
-        </thead>
-        <tbody>
-          {Array.from({ length: Math.floor(geometry.xMax / 10) + 1 }, (_, i) => i * 10).map((t) => (
-            <tr key={t}>
-              <th scope="row">{t}</th>
-              <td>{formatPercent(curve[Math.min(t, curve.length - 1)])}%</td>
+      {/*
+        Wrapped rather than marked `sr-only` directly: a table ignores a width
+        below its own min-content width, so an sr-only table is still laid out
+        at full size and pushes the page sideways — 531px of scroll width at a
+        390px viewport. A block wrapper honours the 1px box and clips it.
+      */}
+      <div className="sr-only">
+        <table>
+          <caption>{description}</caption>
+          <thead>
+            <tr>
+              <th scope="col">Pulls</th>
+              <th scope="col">Chance</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {Array.from({ length: Math.floor(geometry.xMax / 10) + 1 }, (_, i) => i * 10).map(
+              (t) => (
+                <tr key={t}>
+                  <th scope="row">{t}</th>
+                  <td>{formatPercent(curve[Math.min(t, curve.length - 1)])}%</td>
+                </tr>
+              ),
+            )}
+          </tbody>
+        </table>
+      </div>
     </figure>
   );
 }

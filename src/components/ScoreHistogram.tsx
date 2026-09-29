@@ -121,25 +121,33 @@ export function ScoreHistogram({
         Where it lands at +20, across {formatNumber(trials)} simulated upgrade paths.
       </figcaption>
 
-      <table className="sr-only">
-        <caption>{description}</caption>
-        <thead>
-          <tr>
-            <th scope="col">Score</th>
-            <th scope="col">Outcomes</th>
-          </tr>
-        </thead>
-        <tbody>
-          {bins.map((bin) => (
-            <tr key={bin.from}>
-              <th scope="row">
-                {bin.from} to {bin.to}
-              </th>
-              <td>{bin.count}</td>
+      {/*
+        Wrapped rather than marked `sr-only` directly: a table ignores a width
+        below its own min-content width, so an sr-only table is still laid out
+        at full size and pushes the page sideways — 531px of scroll width at a
+        390px viewport. A block wrapper honours the 1px box and clips it.
+      */}
+      <div className="sr-only">
+        <table>
+          <caption>{description}</caption>
+          <thead>
+            <tr>
+              <th scope="col">Score</th>
+              <th scope="col">Outcomes</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {bins.map((bin) => (
+              <tr key={bin.from}>
+                <th scope="row">
+                  {bin.from} to {bin.to}
+                </th>
+                <td>{bin.count}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </figure>
   );
 }

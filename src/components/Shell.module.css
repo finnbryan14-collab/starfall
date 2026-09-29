@@ -5,6 +5,15 @@
   padding: 0 var(--gutter) calc(96px + env(safe-area-inset-bottom));
 }
 
+/*
+ * A block formatting context, so the first heading's top margin cannot collapse
+ * through an empty `main` and drop the whole column ten pixels once the stored
+ * state arrives. Small, but it is a visible jump and it counts against CLS.
+ */
+.main {
+  display: flow-root;
+}
+
 .top {
   display: flex;
   align-items: center;

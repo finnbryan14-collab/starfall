@@ -8,6 +8,22 @@
   display: block;
 }
 
+/*
+ * A screen's worth of space while the stored state loads.
+ *
+ * Every screen renders an empty busy panel until IndexedDB answers, then fills
+ * it. With no height reserved, the footer starts near the top of the page and
+ * is thrown down the moment the content arrives — measured at 0.182 CLS, which
+ * on its own cost Lighthouse's performance score five points on /plan.
+ *
+ * A screen's height rather than a guess at the content's: every screen is
+ * taller than the viewport once loaded, so the footer stays below the fold
+ * throughout and nothing visible moves at all.
+ */
+.panel[aria-busy='true'] {
+  min-height: 100svh;
+}
+
 @media (min-width: 1024px) {
   .panel {
     display: grid;
