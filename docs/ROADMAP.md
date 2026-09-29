@@ -39,6 +39,7 @@ Work top to bottom. Each task is small enough for one Claude Code session. Check
 
 - [ ] Enka proxy route with TTL caching, User-Agent, and per-status error messages; UID import screen; character chips. **Done when** a real public UID imports and a second request within TTL is served from cache.
 - [ ] Wish history import (paste URL → proxy paging → merge by id). **Done when** a real import fills pity and guarantee on the Plan tab and the authkey isn't persisted anywhere.
+- [ ] Primogem ledger: track a confirmed balance plus income earned since, minus pulls seen in wish history, so the planner’s balance stays current without retyping. Show when it was last confirmed. **Done when** the Plan screen opens with a balance that is right without touching it, and says how stale it is.
 - [ ] Luck stats page: pity at each 5★, 50/50 record, average vs expected.
 - [ ] GOOD inventory import with Zod validation and a confirm step.
 - [ ] Backups: export and import all tables as one JSON file.

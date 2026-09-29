@@ -11,7 +11,6 @@ Ideas from planning, not scheduled. Pull into ROADMAP.md when v1 ships.
 - **What to farm today:** domain weekday rotation × your planned characters' talent books and weapon materials.
 - **Endgame lineup planner** with reset countdowns and this season's eligible characters.
 - **Patch calendar** with banner and event countdowns.
-- **Primogem ledger:** chart actual balance over time against the projection.
 
 ## Artifacts and builds
 
