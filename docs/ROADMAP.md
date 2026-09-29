@@ -23,7 +23,7 @@ Work top to bottom. Each task is small enough for one Claude Code session. Check
 
 ## Phase 2: Artifacts
 
-- [ ] `src/engine/artifacts/model.ts`: main stat tables, substat weights and max rolls, seeded RNG, `simulateToMax`. **Done when** distribution tests match the published main-stat odds within 0.3pp over 200k samples.
+- [x] `src/engine/artifacts/model.ts`: main stat tables, substat weights and max rolls, seeded RNG, `simulateToMax`. **Done when** distribution tests match the published main-stat odds within 0.3pp over 200k samples.
 - [ ] `keepOrTrash` in a Web Worker via Comlink; verdict thresholds in config. **Done when** the MATH.md §4 example returns about 50% and the UI stays responsive during the run.
 - [ ] `resinEstimate` (median and p90 resin and days). **Done when** the sands example lands near 15,000 median.
 - [ ] Artifacts screen: substat entry, verdict, histogram, "Roll to +20" with `scrambleText`, resin estimator. **Done when** manual entry of a 4-line piece takes under 20 seconds on a phone.
