@@ -58,7 +58,15 @@ export async function GET(_request: Request, context: { params: Promise<{ uid: s
     );
   }
 
-  const contact = process.env.STARFALL_CONTACT ?? 'contact-not-set';
+  const contact = process.env.STARFALL_CONTACT;
+  if (!contact && process.env.NODE_ENV !== 'production') {
+    // Loud in development, because a deploy that reaches Enka anonymously is
+    // exactly the thing they ask clients not to do, and a silent default
+    // would ship without anyone noticing. See .env.example.
+    console.warn(
+      '[starfall] STARFALL_CONTACT is not set. Enka asks for a reachable contact in the User-Agent.',
+    );
+  }
 
   let response: Response;
   try {
@@ -67,7 +75,7 @@ export async function GET(_request: Request, context: { params: Promise<{ uid: s
         // Enka asks for a custom User-Agent so they can identify and help
         // traffic. STARFALL_CONTACT must be set to something reachable
         // before this is deployed anywhere public.
-        'User-Agent': `Starfall/0.1 (+${contact})`,
+        'User-Agent': `Starfall/0.1 (+${contact ?? 'contact-not-set'})`,
         Accept: 'application/json',
       },
       cache: 'no-store',

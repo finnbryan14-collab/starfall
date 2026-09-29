@@ -52,7 +52,7 @@ test.describe('Account screen', () => {
     await page.goto('/account');
 
     await page.getByLabel('UID').fill('618285856');
-    await page.getByRole('button', { name: 'Import' }).click();
+    await page.getByRole('button', { name: 'Import characters' }).click();
 
     const chips = page.getByLabel('Characters in your showcase');
     await expect(chips).toBeVisible();
@@ -72,7 +72,7 @@ test.describe('Account screen', () => {
     await mockEnka(page, profileFixture);
     await page.goto('/account');
     await page.getByLabel('UID').fill('618285856');
-    await page.getByRole('button', { name: 'Import' }).click();
+    await page.getByRole('button', { name: 'Import characters' }).click();
     await expect(page.getByText('Kamisato Ayaka')).toBeVisible();
 
     await page.reload();
@@ -85,7 +85,7 @@ test.describe('Account screen', () => {
     await mockEnka(page, profileFixture);
     await page.goto('/account');
     await page.getByLabel('UID').fill('618285856');
-    await page.getByRole('button', { name: 'Import' }).click();
+    await page.getByRole('button', { name: 'Import characters' }).click();
     await expect(page.getByText('Kamisato Ayaka')).toBeVisible();
 
     // Their docs are explicit that a repeat request burns rate limit even when
@@ -103,7 +103,7 @@ test.describe('Account screen', () => {
 
     await page.goto('/account');
     await page.getByLabel('UID').fill('12345');
-    await page.getByRole('button', { name: 'Import' }).click();
+    await page.getByRole('button', { name: 'Import characters' }).click();
 
     await expect(page.getByText(/That UID doesn.t look right/)).toBeVisible();
     expect(requests, 'a malformed UID must not reach the network').toBe(0);
@@ -121,7 +121,7 @@ test.describe('Account screen', () => {
       await mockEnka(page, { error: testCase.error }, testCase.status);
       await page.goto('/account');
       await page.getByLabel('UID').fill('618285856');
-      await page.getByRole('button', { name: 'Import' }).click();
+      await page.getByRole('button', { name: 'Import characters' }).click();
 
       await expect(
         page.locator('main').getByRole('alert'),
@@ -138,7 +138,7 @@ test.describe('Account screen', () => {
     });
     await page.goto('/account');
     await page.getByLabel('UID').fill('618285856');
-    await page.getByRole('button', { name: 'Import' }).click();
+    await page.getByRole('button', { name: 'Import characters' }).click();
 
     await expect(page.locator('main').getByRole('alert')).toContainText(
       /Turn on your in-game character showcase/,
@@ -149,7 +149,7 @@ test.describe('Account screen', () => {
     await mockEnka(page, profileFixture);
     await page.goto('/account');
     await page.getByLabel('UID').fill('618285856');
-    await page.getByRole('button', { name: 'Import' }).click();
+    await page.getByRole('button', { name: 'Import characters' }).click();
     await expect(page.getByText('Kamisato Ayaka')).toBeVisible();
 
     await page.getByRole('button', { name: 'Forget this UID' }).click();

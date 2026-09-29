@@ -21,6 +21,13 @@ Open `design/preview.html` in a browser (it needs internet for fonts and anime.j
 
 Edit `docs/DECISIONS.md` and tell Claude Code what changed.
 
+## Before deploying
+
+Copy `.env.example` to `.env.local` and set `STARFALL_CONTACT` to something
+reachable. Enka.Network asks every client to identify itself in the User-Agent
+so they can get in touch about your traffic; without it Starfall sends
+`contact-not-set`.
+
 ## What's inside
 
 ```

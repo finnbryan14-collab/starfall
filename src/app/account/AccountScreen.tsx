@@ -8,6 +8,7 @@ import { ENKA_FAILURE_COPY, hasShowcase } from '@/lib/enka';
 
 import styles from './AccountScreen.module.css';
 import { useEnkaProfile } from './useEnkaProfile';
+import { WishImport } from './WishImport';
 
 /**
  * Bringing an account in, and saying plainly what is stored and where.
@@ -110,7 +111,7 @@ export function AccountScreen() {
             className={styles.primary}
             disabled={importing || (refreshingSameUid && cooldownMs > 0)}
           >
-            {importing ? 'Importing…' : profile ? 'Refresh' : 'Import'}
+            {importing ? 'Importing…' : profile ? 'Refresh' : 'Import characters'}
           </button>
         </form>
 
@@ -209,11 +210,7 @@ export function AccountScreen() {
       </div>
 
       <div className={screen.colSide}>
-        <h2 className={screen.sec}>Wish history</h2>
-        <p className={screen.body}>
-          Paste the history link from the game. Starfall reads it once to fill in your pity and
-          50/50 status, then forgets the link.
-        </p>
+        <WishImport />
 
         <h2 className={screen.sec}>Backups</h2>
         <p className={screen.body}>
