@@ -5,7 +5,7 @@ Work top to bottom. Each task is small enough for one Claude Code session. Check
 ## Phase 0: Scaffold and design system
 
 - [x] Create the Next.js app (App Router, TypeScript strict, `src/` dir, pnpm) with `create-next-app@latest`. Add ESLint, Prettier, Vitest, Playwright. **Done when** `pnpm dev`, `pnpm test`, and `pnpm lint` all run clean.
-- [ ] Copy `design/tokens.css` to `src/styles/tokens.css`; map tokens into Tailwind's theme; set the `--ink` background and body type globally. **Done when** a token swatch page at `/dev/tokens` renders every token.
+- [x] Copy `design/tokens.css` to `src/styles/tokens.css`; map tokens into Tailwind's theme; set the `--ink` background and body type globally. **Done when** a token swatch page at `/dev/tokens` renders every token.
 - [ ] Load Bodoni Moda and Source Sans 3 with `next/font/google`; enable tabular figures on the UI font. **Done when** no layout shift on reload.
 - [ ] Build the app shell: bottom bar (mobile), left rail (≥1024px), four routes (`/plan`, `/artifacts`, `/timers`, `/account`), starfield background (static SVG, seeded). **Done when** it matches the preview's shell at 390px and 1280px.
 - [ ] Add `src/motion/`: `useAnimeScope(rootRef, setup)` wrapping `createScope` + `revert()`, a `prefersReducedMotion()` helper, and `tweenNumber(el, from, to, format)`. **Done when** a Storybook-free demo page at `/dev/motion` shows each helper, and reduced motion jumps to end states.
