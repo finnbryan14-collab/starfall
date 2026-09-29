@@ -31,8 +31,8 @@ Work top to bottom. Each task is small enough for one Claude Code session. Check
 
 ## Phase 3: Timers and install
 
-- [ ] Timer engine: each timer computed from `setAt` + rule (resin, transformer, expeditions, realm currency, resets). **Done when** tests cover caps and day boundaries in UTC−5.
-- [ ] Timers screen with the resin ring animation. **Done when** values are correct after a simulated 10-hour gap.
+- [x] Timer engine: each timer computed from `setAt` + rule (resin, transformer, expeditions, realm currency, resets). **Done when** tests cover caps and day boundaries in UTC−5.
+- [x] Timers screen with the resin ring animation. **Done when** values are correct after a simulated 10-hour gap.
 - [ ] PWA: manifest, icons (original), service worker with Serwist (or the current recommended Next.js PWA option), offline shell. **Done when** it installs on iOS and Android and opens offline.
 
 ## Phase 4: Account

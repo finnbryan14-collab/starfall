@@ -182,13 +182,13 @@ Newer crafting paths (Sanctifying Elixir via the Artifact Transmuter, which guar
 
 ## 5. Timers
 
-| Timer                  | Rule                                                                 |
-| ---------------------- | -------------------------------------------------------------------- |
-| Original Resin         | +1 every 8 minutes up to the cap (200 as of recent versions; verify) |
-| Parametric Transformer | Usable again about 7 days after use (verify exact hours)             |
-| Expeditions            | 4, 8, 12, or 20 hours, per slot                                      |
-| Realm currency         | User enters current amount, cap, and hourly rate from their teapot   |
-| Daily reset            | 04:00 server time (America server: UTC−5)                            |
+| Timer                  | Rule                                                                                                                                                                 |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Original Resin         | +1 every 8 minutes up to a cap of 200 (raised from 160 in version 4.7)                                                                                               |
+| Parametric Transformer | Usable again 166 hours after use, which is 6 days 22 hours. The gadget description rounds to 7 days, so assuming 7 makes a player wait two hours too long every week |
+| Expeditions            | 4, 8, 12, or 20 hours, per slot                                                                                                                                      |
+| Realm currency         | User enters current amount, cap, and hourly rate from their teapot                                                                                                   |
+| Daily reset            | 04:00 server time (America server: UTC−5)                                                                                                                            |
 
 Timers compute from a stored `setAt` timestamp and the rule, never from a ticking counter, so they stay correct when the app is closed.
 
