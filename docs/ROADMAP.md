@@ -8,7 +8,7 @@ Work top to bottom. Each task is small enough for one Claude Code session. Check
 - [x] Copy `design/tokens.css` to `src/styles/tokens.css`; map tokens into Tailwind's theme; set the `--ink` background and body type globally. **Done when** a token swatch page at `/dev/tokens` renders every token.
 - [x] Load Bodoni Moda and Source Sans 3 with `next/font/google`; enable tabular figures on the UI font. **Done when** no layout shift on reload.
 - [x] Build the app shell: bottom bar (mobile), left rail (≥1024px), four routes (`/plan`, `/artifacts`, `/timers`, `/account`), starfield background (static SVG, seeded). **Done when** it matches the preview's shell at 390px and 1280px.
-- [ ] Add `src/motion/`: `useAnimeScope(rootRef, setup)` wrapping `createScope` + `revert()`, a `prefersReducedMotion()` helper, and `tweenNumber(el, from, to, format)`. **Done when** a Storybook-free demo page at `/dev/motion` shows each helper, and reduced motion jumps to end states.
+- [x] Add `src/motion/`: `useAnimeScope(rootRef, setup)` wrapping `createScope` + `revert()`, a `prefersReducedMotion()` helper, and `tweenNumber(el, from, to, format)`. **Done when** a Storybook-free demo page at `/dev/motion` shows each helper, and reduced motion jumps to end states.
 - [ ] Core components: StepperRow, SegmentedControl, AnswerBlock, BottomSheet, SubstatLine, TimerRow. **Done when** each has a `/dev/components` example and keyboard focus is visible.
 
 ## Phase 1: Wish planner
