@@ -26,6 +26,7 @@ All values live in `design/tokens.css`. Copy it into `src/styles/tokens.css` and
 | `--rule` | `#30357a` | Hairlines that group content |
 | `--starlight` | `#ece6d6` | Primary text |
 | `--dim` | `#a2a5cc` | Secondary text |
+| `--faint` | `#8789c0` | Tertiary text, axis labels |
 | `--gold` | `#e7b75f` | 5★, the target, primary action |
 | `--violet` | `#b18cf0` | 4★ |
 | `--blue` | `#74a9ee` | 3★ |
@@ -104,7 +105,7 @@ Motion explains a change the person caused. Nothing moves on its own except coun
 
 **Easing:** `out(3)` for things arriving, `inOut(2)` for things traveling, `spring({ bounce: 0.25 })` only for toggles.
 
-**Reduced motion:** check `matchMedia('(prefers-reduced-motion: reduce)')` in the motion helpers and jump straight to final states. The CSS tokens already zero the durations.
+**Reduced motion:** `src/motion/` is the single place this is enforced. It checks `matchMedia('(prefers-reduced-motion: reduce)')` — with a live listener, so a mid-session change is picked up — and jumps straight to final states. Note the media query in `tokens.css` only zeroes the *CSS* durations; anime.js never reads CSS custom properties, so JS animations are unaffected by it and must be guarded in the helpers.
 
 **Never:** scroll-triggered fade-ups on every section, hover lifts on every row, looping ambient animation, parallax, confetti.
 
@@ -141,7 +142,7 @@ Plain, specific, sentence case. Answers are sentences a friend would say.
 - Rarity is never shown by color alone; pair it with ★ counts.
 - Visible focus ring: 2px `--gold` outline with 2px offset.
 - Charts have an `aria-label` sentence with the key number, plus a visually hidden table of the curve at 10-pull steps.
-- All inputs have labels; steppers expose `role="spinbutton"` semantics via native `<input type="number">`.
+- All inputs have labels. Steppers expose `role="spinbutton"` with `aria-valuenow`/`aria-valuemin`/`aria-valuemax`/`aria-valuetext` and handle ArrowUp/ArrowDown, over an `<input type="text" inputmode="numeric">` — a native number input cannot render thousands separators, and "11,200" beats "11200" on a phone.
 
 ## Assets and branding
 

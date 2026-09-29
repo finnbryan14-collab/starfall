@@ -12,7 +12,7 @@
   --rule: #30357a;         /* hairlines that group content */
   --starlight: #ece6d6;    /* primary text */
   --dim: #a2a5cc;          /* secondary text */
-  --faint: #6c70a3;        /* tertiary text, axis labels */
+  --faint: #8789c0;        /* tertiary text, axis labels. 5.26:1 on --ink, 4.64:1 on --well */
 
   /* ---------- Color: rarity (the wish meteor colors) ---------- */
   /* These carry meaning. Gold means 5-star or "the thing you want". Never decorative. */

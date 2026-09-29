@@ -52,7 +52,7 @@ Regenerate static data each patch (roughly every six weeks). The script should f
 
 - **HoYoLAB login cookies** (live resin, real-time notes). They grant broad account access. If added later, keep the cookie on-device, encrypted, and never on our server.
 - **Reading game memory or automating input.** Out of scope permanently; it risks bans.
-- **Accounts or sync.** Local-first with JSON export/import in Account → Backups. Sync is a Phase 5 backlog item.
+- **Accounts or sync.** Local-first with JSON export/import in Account → Backups. Sync is a backlog item, not part of v1.
 
 ## Storage schema (Dexie / IndexedDB)
 

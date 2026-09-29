@@ -58,9 +58,9 @@ Ship `consolidated55` as the default (stateless, 0.55). Leave a `counterModel` s
 
 ---
 
-## 2. Weapon event banner (Epitomized Path) — verify before building
+## 2. Weapon event banner (Epitomized Path) — backlog, not v1
 
-Community-derived model, lower confidence. Confirm against current sources in Phase 3 before shipping:
+Not scheduled: SPEC.md does not list weapons in v1, no ROADMAP phase has a weapon task, and BACKLOG.md carries "Weapon banner planner". Kept here so the model is not lost. Community-derived and lower confidence — confirm every number against current sources before building:
 
 - Base 0.7%, rising from pull 63 by about 7% per pull, guaranteed by 80 (in practice 5★ weapons almost always land by 77).
 - A 5★ is one of the two featured weapons 75% of the time; each featured weapon is 50% of that.
@@ -168,7 +168,7 @@ resin = runs × 20
 
 Report the median and the 90th percentile, and convert to days at 180 resin per day (natural regen is one per 8 minutes). Example: an on-set ATK% sands that finishes at 30+ crit value costs about 15,000 resin at the median and about 50,000 for 9-in-10 odds.
 
-Newer crafting paths (Sanctifying Elixir via the Artifact Transmuter, which guarantees at least two rolls into chosen substats since 5.5) are a Phase 5 comparison feature, not v1.
+Newer crafting paths (Sanctifying Elixir via the Artifact Transmuter, which guarantees at least two rolls into chosen substats since 5.5) are a backlog comparison feature, not v1. (See BACKLOG.md → Artifacts and builds.)
 
 ---
 
