@@ -13,7 +13,7 @@ Work top to bottom. Each task is small enough for one Claude Code session. Check
 
 ## Phase 1: Wish planner
 
-- [ ] `src/engine/wish/pity.ts`: `p5Char`, `next5Dist`, expected-pulls test (62.30). **Done when** tests in MATH.md §1 pass.
+- [x] `src/engine/wish/pity.ts`: `p5Char`, `next5Dist`, expected-pulls test (62.30). **Done when** tests in MATH.md §1 pass.
 - [ ] `src/engine/wish/featured.ts`: `FiftyFiftyModel` interface, `consolidated55`, DP `featuredCdf` for 1–7 copies, pulls-for-quantile helper. **Done when** DP and Monte Carlo tests agree.
 - [ ] Research current primogem income values; write `src/engine/income/defaults.ts` with `source` and `verifiedAt` on every field; `projectIncome(inputs, fromDate, toDate)`. **Done when** unit tests cover Welkin expiring mid-range and reset boundaries.
 - [ ] `src/engine/calendar/banners.ts` with current and next phase windows (sources linked). **Done when** the planner can default the target date from a chosen banner.
