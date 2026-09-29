@@ -1,9 +1,13 @@
+import { AMERICA_UTC_OFFSET, MS_PER_DAY, resetHourUtc } from '../time';
 import {
   IMAGINARIUM_THEATER_RESET_DAY,
   PRIMOGEMS_PER_PULL,
   SPIRAL_ABYSS_RESET_DAY,
   type IncomeAssumptions,
 } from './defaults';
+
+// Re-exported so existing callers keep one import site for server-time facts.
+export { AMERICA_UTC_OFFSET, DAILY_RESET_HOUR } from '../time';
 
 /**
  * Projecting primogem income between two dates.
@@ -16,22 +20,6 @@ import {
  *
  * See docs/MATH.md section 3.
  */
-
-/** Daily reset is 04:00 server time. */
-export const DAILY_RESET_HOUR = 4;
-
-/**
- * America server, UTC-5. DECISIONS.md records this as the v1 default; it is a
- * parameter throughout so other servers are a change of argument, not of code.
- */
-export const AMERICA_UTC_OFFSET = -5;
-
-const MS_PER_DAY = 86_400_000;
-
-/** UTC hour at which the server's daily reset falls. */
-function resetHourUtc(utcOffset: number): number {
-  return DAILY_RESET_HOUR - utcOffset;
-}
 
 /**
  * Daily resets in the half-open interval (from, to].

@@ -59,7 +59,21 @@ export type WishRow = {
   data: unknown;
   updatedAt: number;
 };
-export type TimerRow = { id: string; setAt: number; value: number; updatedAt: number };
+/**
+ * One timer's stored state.
+ *
+ * Only `setAt` and `value` are ever written; everything shown is derived from
+ * them at read time, so a timer is correct after the app has been closed
+ * overnight rather than having drifted (docs/MATH.md section 5).
+ */
+export type TimerRow = {
+  id: string;
+  setAt: number;
+  value: number;
+  /** Per-timer extras: the teapot rate and cap, an expedition's duration. */
+  config?: Record<string, number>;
+  updatedAt: number;
+};
 export type SettingRow = { key: string; value: unknown; updatedAt: number };
 
 export class StarfallDb extends Dexie {
