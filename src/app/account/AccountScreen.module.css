@@ -1,0 +1,111 @@
+.field {
+  display: flex;
+  gap: var(--s-2);
+  margin-top: var(--s-3);
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  min-height: 48px;
+  background: var(--well);
+  border: 1px solid transparent;
+  border-radius: var(--r-input);
+  padding: 0 14px;
+  color: inherit;
+  font: inherit;
+}
+
+.input::placeholder {
+  color: var(--faint);
+}
+
+.primary {
+  min-height: 48px;
+  padding: 0 18px;
+  border-radius: var(--r-input);
+  border: 1px solid var(--gold);
+  background: var(--gold);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.primary:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.quiet {
+  min-height: var(--tap);
+  padding: 0 var(--s-3);
+  border-radius: var(--r-input);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--dim);
+  font: inherit;
+  cursor: pointer;
+}
+
+.failure {
+  color: var(--feed);
+  font-size: var(--t-sm);
+  margin: var(--s-3) 0 0;
+  max-width: 44ch;
+}
+
+.note {
+  color: var(--dim);
+  font-size: var(--t-sm);
+  margin: var(--s-3) 0 0;
+  max-width: 44ch;
+}
+
+.chips {
+  list-style: none;
+  margin: var(--s-4) 0 0;
+  padding: 0;
+  border-top: 1px solid var(--rule);
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-2) 0;
+  border-bottom: 1px solid var(--rule);
+  min-height: var(--tap);
+}
+
+.portrait {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: var(--r-pill);
+  background: var(--well);
+  object-fit: cover;
+}
+
+.chipText {
+  flex: 1;
+  min-width: 0;
+}
+
+.chipName {
+  display: block;
+}
+
+.chipMeta {
+  display: block;
+  font-size: var(--t-xs);
+  color: var(--faint);
+}
+
+/* A small element tag, never a background (DESIGN.md). */
+.element {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--r-pill);
+  flex: none;
+}

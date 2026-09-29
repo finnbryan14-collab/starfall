@@ -52,6 +52,7 @@ pnpm lint         # ESLint + Prettier check
 pnpm format       # Prettier write
 pnpm typecheck    # tsc --noEmit
 pnpm perf         # engine performance budget, run isolated
+pnpm build:data   # regenerate src/data/enka-map.ts from Enka store files
 pnpm build        # production build
 ```
 
