@@ -1,0 +1,32 @@
+# dependencies
+node_modules/
+.pnp.*
+.yarn/
+
+# next.js
+.next/
+out/
+next-env.d.ts
+
+# testing
+coverage/
+test-results/
+playwright-report/
+blob-report/
+.playwright/
+
+# env
+.env
+.env.*
+!.env.example
+
+# misc
+.DS_Store
+*.pem
+*.tsbuildinfo
+
+# the original planning package (kept on disk, not tracked)
+astrolabe_gen.zip
+
+# original download, duplicate of design/preview.html
+gen_preview.html

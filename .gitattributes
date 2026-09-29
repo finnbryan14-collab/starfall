@@ -1,0 +1,11 @@
+# Normalize to LF in the repo and in the working tree. Keeps diffs clean on
+# Windows and keeps design/preview.html byte-stable across checkouts.
+* text=auto eol=lf
+
+# Binary
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.zip binary

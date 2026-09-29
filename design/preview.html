@@ -1,0 +1,823 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#141739">
+<title>Astrolabe preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..700;1,6..96,400..700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* ===== Tokens (mirror of design/tokens.css) ===== */
+:root {
+  --ink: #141739; --well: #1c2050; --well-2: #252a63; --rule: #30357a;
+  --starlight: #ece6d6; --dim: #a2a5cc; --faint: #6c70a3;
+  --gold: #e7b75f; --gold-soft: rgb(231 183 95 / 0.16); --violet: #b18cf0; --blue: #74a9ee;
+  --keep: var(--gold); --maybe: #d6c9a8; --feed: #e4708a;
+  --font-display: "Bodoni Moda", "Didot", "Bodoni 72", Georgia, serif;
+  --font-ui: "Source Sans 3", "Source Sans Pro", system-ui, sans-serif;
+  --t-xs: 0.8rem; --t-sm: 0.875rem; --t-md: 1rem; --t-lg: 1.25rem; --t-xl: 1.5625rem;
+  --t-2xl: 1.953rem; --t-3xl: 2.441rem; --t-hero: 4.768rem;
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px; --s-6: 32px; --s-7: 48px; --s-8: 64px;
+  --r-input: 10px; --r-sheet: 20px; --r-pill: 999px;
+  --d-quick: 160ms; --d-move: 420ms; --d-signature: 1100ms;
+  --gutter: 16px; --column: 460px; --tap: 44px;
+}
+@media (prefers-reduced-motion: reduce) { :root { --d-quick: 0ms; --d-move: 0ms; --d-signature: 0ms; } }
+
+/* ===== Base ===== */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; min-height: 100vh; color: var(--starlight); font-family: var(--font-ui);
+  font-size: var(--t-md); line-height: 1.5; font-variant-numeric: tabular-nums;
+  background: radial-gradient(900px 520px at 78% -12%, #20266a 0%, transparent 62%), var(--ink);
+  background-attachment: fixed;
+}
+button, input { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; border-radius: 6px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.sky { position: fixed; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
+
+.app { max-width: var(--column); margin: 0 auto; padding: 0 var(--gutter) calc(96px + env(safe-area-inset-bottom)); }
+
+/* ===== Header ===== */
+.top { display: flex; align-items: center; justify-content: space-between; height: 56px; }
+.wordmark { display: flex; align-items: center; gap: var(--s-2); font-family: var(--font-display); font-style: italic; font-weight: 500; font-size: var(--t-lg); letter-spacing: 0.01em; }
+.wordmark svg { width: 16px; height: 16px; }
+.sample { font-size: var(--t-xs); color: var(--faint); }
+
+/* ===== Answer block ===== */
+.title { font-family: var(--font-display); font-style: italic; font-weight: 500; font-size: var(--t-2xl); line-height: 1.15; margin: var(--s-4) 0 0; }
+.answer { font-family: var(--font-display); font-weight: 500; font-size: var(--t-hero); line-height: 1; letter-spacing: -0.02em; margin: var(--s-3) 0 0; font-variant-numeric: lining-nums tabular-nums; }
+.answer .unit { font-size: 0.42em; color: var(--dim); margin-left: 2px; vertical-align: 0.95em; letter-spacing: 0; }
+.lede { color: var(--dim); margin: var(--s-2) 0 0; max-width: 36ch; }
+.lede strong { color: var(--starlight); font-weight: 600; }
+.verdict-keep { color: var(--keep) !important; }
+.verdict-maybe { color: var(--maybe) !important; }
+.verdict-feed { color: var(--feed) !important; }
+
+/* ===== Fate Dial ===== */
+.dial { margin: var(--s-5) 0 0; }
+.dial svg, .hist svg { display: block; width: 100%; height: auto; overflow: visible; }
+.axis-text { fill: var(--faint); font-size: 11px; font-family: var(--font-ui); }
+.curve-all { fill: none; stroke: var(--faint); stroke-width: 1.25; opacity: 0.7; }
+.curve-mine { fill: none; stroke: var(--gold); stroke-width: 2.25; stroke-linecap: round; stroke-linejoin: round; }
+.wash { fill: url(#goldWash); }
+.hair { stroke: var(--rule); stroke-width: 1; }
+.base { stroke: var(--rule); stroke-width: 1.25; }
+.you-line { stroke: var(--gold); stroke-width: 1; stroke-dasharray: 2 3; opacity: 0.6; }
+.you-text { fill: var(--gold); font-size: 12px; font-weight: 600; font-family: var(--font-ui); }
+
+.cons { list-style: none; display: flex; gap: var(--s-5); padding: 0; margin: var(--s-4) 0 0; }
+.cons li { display: flex; align-items: baseline; gap: 6px; font-size: var(--t-sm); color: var(--dim); }
+.cons .star { color: var(--gold); font-size: 13px; }
+.cons b { color: var(--starlight); font-weight: 600; }
+.hint { color: var(--dim); font-size: var(--t-sm); margin: var(--s-3) 0 0; }
+
+/* ===== Ledger rows ===== */
+.sec { font-size: var(--t-lg); font-weight: 600; margin: var(--s-7) 0 var(--s-2); }
+.ledger { border-top: 1px solid var(--rule); }
+.row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: var(--s-3); min-height: 60px; padding: var(--s-2) 0; border-bottom: 1px solid var(--rule); }
+.row-label { font-size: var(--t-md); }
+.row-note { display: block; font-size: var(--t-xs); color: var(--faint); line-height: 1.35; margin-top: 2px; }
+.row-value { font-size: var(--t-lg); text-align: right; }
+.row-value small { display: block; font-size: var(--t-xs); color: var(--faint); }
+
+.stepper { display: flex; align-items: center; gap: 2px; }
+.stepper button { width: var(--tap); height: var(--tap); border: 0; border-radius: var(--r-input); background: var(--well); font-size: 20px; line-height: 1; cursor: pointer; transition: background var(--d-quick); }
+.stepper button:active { background: var(--well-2); }
+.stepper input { width: 7.2ch; background: transparent; border: 0; text-align: right; font-size: var(--t-lg); padding: 0 6px; -moz-appearance: textfield; appearance: textfield; }
+.stepper input::-webkit-outer-spin-button, .stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+.seg { display: inline-flex; background: var(--well); border-radius: var(--r-pill); padding: 3px; }
+.seg button { min-height: 40px; padding: 0 14px; border: 0; border-radius: var(--r-pill); background: transparent; color: var(--dim); font-size: var(--t-sm); cursor: pointer; transition: background var(--d-quick), color var(--d-quick); }
+.seg button[aria-pressed="true"] { background: var(--well-2); color: var(--starlight); }
+
+/* ===== Artifact piece ===== */
+.piece { margin: var(--s-5) 0 0; border-top: 1px solid var(--rule); }
+.piece-head { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-3) 0; }
+.piece-glyph { width: 40px; height: 40px; flex: none; }
+.piece-name { margin: 0; font-weight: 600; }
+.piece-meta { margin: 0; font-size: var(--t-sm); color: var(--dim); }
+.piece-meta .stars { color: var(--gold); letter-spacing: 1px; }
+.subs { list-style: none; margin: 0; padding: 0; }
+.sub { position: relative; display: grid; grid-template-columns: 1fr auto; padding: 10px 0 12px; border-top: 1px solid var(--rule); }
+.sub .val { font-variant-numeric: tabular-nums; }
+.sub .rv { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; }
+.sub .rv i { display: block; height: 100%; background: var(--dim); width: 0; border-radius: 2px; }
+.sub.goal .rv i { background: var(--gold); }
+
+.hist { margin: var(--s-5) 0 0; }
+.hist figcaption, .dial figcaption { font-size: var(--t-xs); color: var(--faint); margin-top: var(--s-2); }
+.bar { fill: var(--rule); }
+.bar.hit { fill: var(--gold); }
+.goal-line { stroke: var(--starlight); stroke-width: 1; stroke-dasharray: 3 3; }
+.goal-text { fill: var(--starlight); font-size: 12px; font-family: var(--font-ui); }
+
+.actions { display: flex; gap: var(--s-2); margin-top: var(--s-4); align-items: center; flex-wrap: wrap; }
+.btn { min-height: 48px; padding: 0 18px; border-radius: var(--r-input); border: 1px solid var(--rule); background: transparent; font-weight: 600; cursor: pointer; transition: background var(--d-quick); }
+.btn:active { background: var(--well); }
+.btn-primary { background: var(--gold); color: var(--ink); border-color: var(--gold); }
+.btn-primary:active { background: #d4a44f; }
+.btn-quiet { border-color: transparent; color: var(--dim); font-weight: 400; }
+.roll-note { font-size: var(--t-sm); color: var(--dim); margin: var(--s-3) 0 0; min-height: 1.5em; }
+
+/* ===== Timers ===== */
+.ring-wrap { position: relative; width: 220px; height: 220px; margin: var(--s-5) 0 0; }
+.ring-wrap svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring-track { fill: none; stroke: var(--rule); stroke-width: 6; }
+.ring-fill { fill: none; stroke: var(--starlight); stroke-width: 6; stroke-linecap: round; }
+.ring-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.ring-center .answer { margin: 0; font-size: 4rem; }
+.ring-center span { color: var(--dim); font-size: var(--t-sm); }
+.timer { display: block; padding: var(--s-3) 0 var(--s-3); border-bottom: 1px solid var(--rule); }
+.timer-top { display: flex; justify-content: space-between; gap: var(--s-3); }
+.timer-state { color: var(--dim); text-align: right; }
+.timer-state.ready { color: var(--gold); font-weight: 600; }
+.track { height: 2px; background: var(--rule); border-radius: 2px; margin-top: var(--s-2); overflow: hidden; }
+.track i { display: block; height: 100%; background: var(--starlight); }
+.track i.ready { background: var(--gold); }
+
+/* ===== Account ===== */
+.field { display: flex; gap: var(--s-2); margin-top: var(--s-3); }
+.field input { flex: 1; min-width: 0; min-height: 48px; background: var(--well); border: 1px solid transparent; border-radius: var(--r-input); padding: 0 14px; }
+.field input::placeholder { color: var(--faint); }
+.body { color: var(--dim); margin: var(--s-2) 0 0; max-width: 40ch; }
+.notice { font-size: var(--t-xs); color: var(--faint); margin-top: var(--s-7); max-width: 46ch; }
+
+/* ===== Nav ===== */
+.tabs { position: fixed; left: 0; right: 0; bottom: 0; background: rgb(20 23 57 / 0.9); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border-top: 1px solid var(--rule); padding-bottom: env(safe-area-inset-bottom); }
+.tabs-inner { max-width: var(--column); margin: 0 auto; display: flex; }
+.tab { flex: 1; min-height: 62px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: 0; background: transparent; color: var(--faint); font-size: var(--t-xs); cursor: pointer; transition: color var(--d-quick); }
+.tab svg { width: 22px; height: 22px; }
+.tab[aria-current="page"] { color: var(--starlight); }
+
+.toast { position: fixed; left: 50%; bottom: calc(80px + env(safe-area-inset-bottom)); transform: translateX(-50%); background: var(--well-2); color: var(--starlight); padding: 10px 16px; border-radius: var(--r-input); font-size: var(--t-sm); opacity: 0; pointer-events: none; max-width: calc(100% - 32px); }
+
+@media (min-width: 1024px) {
+  .app { max-width: 1120px; padding: 0 var(--s-7) var(--s-8) 152px; }
+  .panel:not([hidden]) { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: var(--s-8); align-items: start; }
+  .col-side { padding-top: 76px; }
+  .col-side > .sec:first-child { margin-top: 0; }
+  .tabs { top: 0; right: auto; width: 104px; border-top: 0; border-right: 1px solid var(--rule); padding: 96px 0 0; }
+  .tabs-inner { flex-direction: column; gap: var(--s-2); }
+  .tab { flex: none; min-height: 72px; }
+  .toast { bottom: var(--s-6); }
+}
+</style>
+</head>
+<body>
+<svg class="sky" id="sky" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
+
+<div class="app">
+  <header class="top">
+    <span class="wordmark">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0 L9.6 6.4 L16 8 L9.6 9.6 L8 16 L6.4 9.6 L0 8 L6.4 6.4 Z" fill="var(--gold)"/></svg>
+      Astrolabe
+    </span>
+    <span class="sample">Preview with sample data</span>
+  </header>
+
+  <main>
+    <!-- ================= PLAN ================= -->
+    <section class="panel" id="panel-plan" aria-labelledby="plan-title">
+      <div class="col-main">
+      <h1 class="title" id="plan-title">Skirk returns Oct 13</h1>
+      <p class="answer" aria-hidden="true"><span id="p-num">0.0</span><span class="unit">%</span></p>
+      <p class="lede" id="p-lede" aria-live="polite">chance you get her by then, with the <strong id="p-pulls">108</strong> pulls you'll have.</p>
+
+      <figure class="dial">
+        <svg id="dial" viewBox="0 0 358 214" role="img" aria-labelledby="dial-label">
+          <title id="dial-label">Chance of getting Skirk by pull count</title>
+          <defs>
+            <linearGradient id="goldWash" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#e7b75f" stop-opacity="0.28"/>
+              <stop offset="1" stop-color="#e7b75f" stop-opacity="0.02"/>
+            </linearGradient>
+            <radialGradient id="glow">
+              <stop offset="0" stop-color="#e7b75f" stop-opacity="0.55"/>
+              <stop offset="1" stop-color="#e7b75f" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <g id="dial-axis"></g>
+          <path class="wash" id="dial-wash" d=""/>
+          <path class="curve-all" id="dial-all" d=""/>
+          <line class="you-line" id="dial-you-line" x1="0" y1="0" x2="0" y2="0"/>
+          <path class="curve-mine" id="dial-mine" d=""/>
+          <g id="meteor">
+            <circle r="13" fill="url(#glow)"/>
+            <circle r="3.6" fill="#f3d18d"/>
+          </g>
+          <text class="you-text" id="dial-you-text" x="0" y="0"></text>
+        </svg>
+        <figcaption>Chance of getting her by each pull. Gold is what your stash covers.</figcaption>
+      </figure>
+
+      <ul class="cons" id="cons" aria-label="Chance by constellation">
+        <li><span class="star" aria-hidden="true">★</span>C0 <b id="c0">0%</b></li>
+        <li><span class="star" aria-hidden="true">★</span>C1 <b id="c1">0%</b></li>
+        <li><span class="star" aria-hidden="true">★</span>C2 <b id="c2">0%</b></li>
+      </ul>
+      <p class="hint" id="p-hint"></p>
+
+      </div>
+      <div class="col-side">
+      <h2 class="sec">Your stash</h2>
+      <div class="ledger">
+        <div class="row">
+          <label class="row-label" for="in-primos">Primogems</label>
+          <div class="stepper">
+            <button type="button" data-for="in-primos" data-step="-160" aria-label="160 fewer primogems">−</button>
+            <input id="in-primos" type="text" inputmode="numeric" autocomplete="off" min="0" max="999999" value="11,200">
+            <button type="button" data-for="in-primos" data-step="160" aria-label="160 more primogems">+</button>
+          </div>
+        </div>
+        <div class="row">
+          <label class="row-label" for="in-fates">Intertwined Fates</label>
+          <div class="stepper">
+            <button type="button" data-for="in-fates" data-step="-1" aria-label="One fewer fate">−</button>
+            <input id="in-fates" type="text" inputmode="numeric" autocomplete="off" min="0" max="9999" value="14">
+            <button type="button" data-for="in-fates" data-step="1" aria-label="One more fate">+</button>
+          </div>
+        </div>
+        <div class="row">
+          <label class="row-label" for="in-pity">Pity<span class="row-note">Pulls since your last 5★</span></label>
+          <div class="stepper">
+            <button type="button" data-for="in-pity" data-step="-1" aria-label="Lower pity">−</button>
+            <input id="in-pity" type="text" inputmode="numeric" autocomplete="off" min="0" max="89" value="22">
+            <button type="button" data-for="in-pity" data-step="1" aria-label="Raise pity">+</button>
+          </div>
+        </div>
+        <div class="row">
+          <span class="row-label" id="ff-label">Next 5★</span>
+          <div class="seg" role="group" aria-labelledby="ff-label">
+            <button type="button" data-guar="0" aria-pressed="true">50/50</button>
+            <button type="button" data-guar="1" aria-pressed="false">Guaranteed</button>
+          </div>
+        </div>
+        <div class="row">
+          <label class="row-label" for="in-income">Income by Oct 13<span class="row-note">2,250 from dailies and Welkin, plus your estimate for events</span></label>
+          <div class="stepper">
+            <button type="button" data-for="in-income" data-step="-100" aria-label="Lower income estimate">−</button>
+            <input id="in-income" type="text" inputmode="numeric" autocomplete="off" min="0" max="99999" value="3,850">
+            <button type="button" data-for="in-income" data-step="100" aria-label="Raise income estimate">+</button>
+          </div>
+        </div>
+      </div>
+      </div>
+    </section>
+
+    <!-- ================= ARTIFACTS ================= -->
+    <section class="panel" id="panel-artifacts" aria-labelledby="art-title" hidden>
+      <div class="col-main">
+      <h1 class="title" id="art-title">Worth leveling this sands?</h1>
+      <p class="answer" aria-hidden="true"><span id="a-num">0.0</span><span class="unit">%</span></p>
+      <p class="lede" id="a-lede" aria-live="polite"></p>
+
+      <div class="piece">
+        <div class="piece-head">
+          <svg class="piece-glyph" viewBox="0 0 40 40" aria-hidden="true">
+            <rect x="0.5" y="0.5" width="39" height="39" rx="10" fill="var(--well)" stroke="var(--rule)"/>
+            <path d="M13 9 H27 M13 31 H27 M14 9 C14 16 20 17 20 20 C20 23 14 24 14 31 M26 9 C26 16 20 17 20 20 C20 23 26 24 26 31" fill="none" stroke="var(--gold)" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <div>
+            <p class="piece-name">Sands of Eon, ATK%</p>
+            <p class="piece-meta"><span class="stars" aria-label="5 stars">★★★★★</span> <span id="a-level">+0</span>, four substats</p>
+          </div>
+        </div>
+        <ul class="subs" id="subs"></ul>
+      </div>
+
+      <div class="ledger" style="margin-top: var(--s-5)">
+        <div class="row">
+          <label class="row-label" for="in-goal">Goal: crit value<span class="row-note">2 × CRIT Rate + CRIT DMG at +20</span></label>
+          <div class="stepper">
+            <button type="button" data-for="in-goal" data-step="-5" aria-label="Lower goal">−</button>
+            <input id="in-goal" type="text" inputmode="numeric" autocomplete="off" min="10" max="50" value="30">
+            <button type="button" data-for="in-goal" data-step="5" aria-label="Raise goal">+</button>
+          </div>
+        </div>
+      </div>
+
+      <figure class="hist">
+        <svg id="hist" viewBox="0 0 358 150" role="img" aria-labelledby="hist-label">
+          <title id="hist-label">Where this piece's crit value lands at +20</title>
+          <g id="hist-bars"></g>
+          <g id="hist-axis"></g>
+        </svg>
+        <figcaption>Where it lands at +20, across 20,000 simulated upgrade paths.</figcaption>
+      </figure>
+
+      <div class="actions">
+        <button type="button" class="btn btn-primary" id="roll">Roll to +20</button>
+        <button type="button" class="btn btn-quiet" id="unroll" hidden>Back to +0</button>
+      </div>
+      <p class="roll-note" id="roll-note" aria-live="polite"></p>
+
+      </div>
+      <div class="col-side">
+      <h2 class="sec">Farming a replacement</h2>
+      <p class="body">An on-set ATK% sands that finishes at <span id="r-goal">30</span>+ crit value, from its domain at 20 resin a run.</p>
+      <div class="ledger" style="margin-top: var(--s-3)">
+        <div class="row">
+          <span class="row-label">Half the time</span>
+          <span class="row-value" id="r-med">0 resin<small>0 days</small></span>
+        </div>
+        <div class="row">
+          <span class="row-label">9 times in 10</span>
+          <span class="row-value" id="r-p90">0 resin<small>0 days</small></span>
+        </div>
+      </div>
+      </div>
+    </section>
+
+    <!-- ================= TIMERS ================= -->
+    <section class="panel" id="panel-timers" aria-labelledby="tim-title" hidden>
+      <div class="col-main">
+      <h1 class="title" id="tim-title">Original Resin</h1>
+      <div class="ring-wrap">
+        <svg viewBox="0 0 220 220" aria-hidden="true">
+          <circle class="ring-track" cx="110" cy="110" r="96"/>
+          <circle class="ring-fill" id="ring" cx="110" cy="110" r="96"/>
+        </svg>
+        <div class="ring-center">
+          <p class="answer" id="resin-num">143</p>
+          <span>of 200</span>
+        </div>
+      </div>
+      <p class="lede" id="resin-lede"></p>
+
+      </div>
+      <div class="col-side">
+      <h2 class="sec">Everything else</h2>
+      <div id="timer-list" style="border-top: 1px solid var(--rule)"></div>
+      </div>
+    </section>
+
+    <!-- ================= ACCOUNT ================= -->
+    <section class="panel" id="panel-account" aria-labelledby="acc-title" hidden>
+      <div class="col-main">
+      <h1 class="title" id="acc-title">Account</h1>
+      <p class="body">Bring in your characters and wish history so the planner fills itself in. Everything stays on this device.</p>
+
+      <h2 class="sec">Characters</h2>
+      <label class="sr-only" for="in-uid">UID</label>
+      <div class="field">
+        <input id="in-uid" inputmode="numeric" placeholder="Your 9- or 10-digit UID">
+        <button type="button" class="btn btn-primary" data-preview>Import</button>
+      </div>
+      <p class="body">Only characters in your in-game showcase come through. Turn the showcase on in your profile first.</p>
+
+      </div>
+      <div class="col-side">
+      <h2 class="sec">Wish history</h2>
+      <p class="body">Paste the history link from the game. Astrolabe reads it once to fill in your pity and 50/50 status, then forgets the link.</p>
+      <div class="actions"><button type="button" class="btn" data-preview>Import wishes</button></div>
+
+      <h2 class="sec">Backups</h2>
+      <div class="actions">
+        <button type="button" class="btn" data-preview>Export everything</button>
+        <button type="button" class="btn btn-quiet" data-preview>Import a backup</button>
+      </div>
+
+      <p class="notice">Astrolabe is a fan project and is not affiliated with HoYoverse. Game content and materials are trademarks and copyrights of HoYoverse.</p>
+      </div>
+    </section>
+  </main>
+</div>
+
+<nav class="tabs" aria-label="Main">
+  <div class="tabs-inner">
+    <button class="tab" data-tab="plan" aria-current="page">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 L13.8 10.2 L22 12 L13.8 13.8 L12 22 L10.2 13.8 L2 12 L10.2 10.2 Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+      Plan
+    </button>
+    <button class="tab" data-tab="artifacts">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3 H17 M7 21 H17 M8 3 C8 9 12 10 12 12 C12 14 8 15 8 21 M16 3 C16 9 12 10 12 12 C12 14 16 15 16 21" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Artifacts
+    </button>
+    <button class="tab" data-tab="timers">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M12 7 V12 L15.5 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Timers
+    </button>
+    <button class="tab" data-tab="account">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5 20 C6 15.5 9 14 12 14 C15 14 18 15.5 19 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Account
+    </button>
+  </div>
+</nav>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script type="module">
+import { animate, createTimeline, stagger, svg, scrambleText } from 'https://cdn.jsdelivr.net/npm/animejs@4.5.0/dist/bundles/anime.esm.min.js';
+
+/* =====================================================================
+   ENGINE: prototype of src/engine (see docs/MATH.md). Pure functions.
+   ===================================================================== */
+
+// Character banner 5★ chance for the n-th pull since the last 5★ (community-derived model).
+function p5Char(n) {
+  if (n >= 90) return 1;
+  if (n >= 74) return Math.min(1, 0.006 + 0.06 * (n - 73));
+  return 0.006;
+}
+
+// CDF of having `copies` of the featured character after t pulls (t = 0..maxPulls).
+// featuredRate: chance a non-guaranteed 5★ is featured (0.55 consolidated, per HoYoverse).
+function featuredCdf({ pity = 0, guaranteed = false, copies = 1, maxPulls = 360, featuredRate = 0.55 }) {
+  const mk = () => Array.from({ length: copies }, () => [new Float64Array(91), new Float64Array(91)]);
+  let cur = mk();
+  cur[0][guaranteed ? 1 : 0][pity] = 1;
+  const cdf = new Float64Array(maxPulls + 1);
+  let done = 0;
+  for (let t = 1; t <= maxPulls; t++) {
+    const nxt = mk();
+    for (let c = 0; c < copies; c++) for (let g = 0; g < 2; g++) {
+      const row = cur[c][g];
+      for (let q = 0; q < 90; q++) {
+        const m = row[q];
+        if (!m) continue;
+        const p = p5Char(q + 1);
+        if (p < 1) nxt[c][g][q + 1] += m * (1 - p);
+        const hit = m * p;
+        const pf = g ? 1 : featuredRate;
+        if (c + 1 >= copies) done += hit * pf; else nxt[c + 1][0][0] += hit * pf;
+        if (pf < 1) nxt[c][1][0] += hit * (1 - pf);
+      }
+    }
+    cur = nxt;
+    cdf[t] = done;
+  }
+  return cdf;
+}
+
+// Artifact substat model (5★).
+const SUB = {
+  hp: { w: 6, max: 298.75, name: 'HP', pct: false }, atk: { w: 6, max: 19.45, name: 'ATK', pct: false },
+  def: { w: 6, max: 23.15, name: 'DEF', pct: false }, hp_: { w: 4, max: 5.83, name: 'HP', pct: true },
+  atk_: { w: 4, max: 5.83, name: 'ATK', pct: true }, def_: { w: 4, max: 7.29, name: 'DEF', pct: true },
+  er: { w: 4, max: 6.48, name: 'Energy Recharge', pct: true }, em: { w: 4, max: 23.31, name: 'Elemental Mastery', pct: false },
+  cr: { w: 3, max: 3.89, name: 'CRIT Rate', pct: true }, cd: { w: 3, max: 7.77, name: 'CRIT DMG', pct: true },
+};
+const TIERS = [0.7, 0.8, 0.9, 1.0];
+
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function weightedPick(keys, rng) {
+  let total = 0; for (const k of keys) total += SUB[k].w;
+  let r = rng() * total;
+  for (const k of keys) { r -= SUB[k].w; if (r <= 0) return k; }
+  return keys[keys.length - 1];
+}
+function simulateToMax(subs, level, mainKey, rng) {
+  const s = { ...subs };
+  const ups = Math.floor((20 - level) / 4);
+  for (let i = 0; i < ups; i++) {
+    const keys = Object.keys(s);
+    const tier = TIERS[Math.floor(rng() * 4)];
+    if (keys.length < 4) {
+      const k = weightedPick(Object.keys(SUB).filter((x) => !(x in s) && x !== mainKey), rng);
+      s[k] = SUB[k].max * tier;
+    } else {
+      const k = keys[Math.floor(rng() * 4)];
+      s[k] += SUB[k].max * tier;
+    }
+  }
+  return s;
+}
+const critValue = (s) => 2 * (s.cr || 0) + (s.cd || 0);
+
+function keepOrTrash({ subs, level, mainKey, goal, trials = 20000, seed = 7 }) {
+  const rng = mulberry32(seed);
+  const scores = new Float64Array(trials);
+  let hit = 0;
+  for (let i = 0; i < trials; i++) {
+    const v = critValue(simulateToMax(subs, level, mainKey, rng));
+    scores[i] = v; if (v >= goal) hit++;
+  }
+  return { p: hit / trials, scores };
+}
+function freshDrop(mainKey, rng) {
+  const n = rng() < 0.2 ? 4 : 3; // 4 lines 20% of the time from domains
+  const s = {};
+  for (let i = 0; i < n; i++) {
+    const k = weightedPick(Object.keys(SUB).filter((x) => !(x in s) && x !== mainKey), rng);
+    s[k] = SUB[k].max * TIERS[Math.floor(rng() * 4)];
+  }
+  return s;
+}
+function resinEstimate({ mainKey, mainProb, goal, trials = 40000, seed = 11 }) {
+  const rng = mulberry32(seed);
+  let ok = 0;
+  for (let i = 0; i < trials; i++) if (critValue(simulateToMax(freshDrop(mainKey, rng), 0, mainKey, rng)) >= goal) ok++;
+  const p = 0.5 * 0.2 * mainProb * (ok / trials);        // set × slot × main stat × substats
+  const perRun = 1 - Math.exp(-1.07 * p);                  // ~1.07 five-star drops per 20-resin run
+  const runs = (q) => Math.ceil(Math.log(1 - q) / Math.log(1 - perRun));
+  return { median: runs(0.5) * 20, p90: runs(0.9) * 20, p };
+}
+
+/* =====================================================================
+   UI
+   ===================================================================== */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const fmt = (n) => Math.round(n).toLocaleString('en-US');
+const NS = 'http://www.w3.org/2000/svg';
+const el = (tag, attrs = {}, parent) => {
+  const e = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  if (parent) parent.appendChild(e);
+  return e;
+};
+
+/* ---------- Starfield (static, seeded) ---------- */
+(() => {
+  const sky = $('#sky'); const rng = mulberry32(2026);
+  for (let i = 0; i < 90; i++) {
+    el('circle', { cx: (rng() * 1000).toFixed(1), cy: (rng() * 1000).toFixed(1), r: (0.6 + rng() * rng() * 2.2).toFixed(2),
+      fill: '#ece6d6', opacity: (0.1 + rng() * 0.35).toFixed(2) }, sky);
+  }
+})();
+
+/* ---------- Toast ---------- */
+let toastAnim;
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg;
+  toastAnim?.pause();
+  if (reduce) { t.style.opacity = 1; setTimeout(() => (t.style.opacity = 0), 2200); return; }
+  toastAnim = animate(t, { opacity: [{ to: 1, duration: 180 }, { to: 1, duration: 1800 }, { to: 0, duration: 300 }], ease: 'out(3)' });
+}
+$$('[data-preview]').forEach((b) => b.addEventListener('click', () => toast('Preview only. This connects in Phase 4.')));
+
+/* ---------- Steppers ---------- */
+const readNum = (input) => +String(input.value).replace(/[^0-9]/g, '') || 0;
+const clampTo = (input, v) => Math.min(+input.getAttribute('max'), Math.max(+input.getAttribute('min'), v));
+function bindStepper(onChange) {
+  $$('.stepper button').forEach((b) => b.addEventListener('click', () => {
+    const input = document.getElementById(b.dataset.for);
+    input.value = fmt(clampTo(input, readNum(input) + +b.dataset.step));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  }));
+  $$('.stepper input').forEach((i) => i.addEventListener('change', () => {
+    i.value = fmt(clampTo(i, readNum(i)));
+    onChange(i.id);
+  }));
+}
+
+/* =================== PLAN =================== */
+const plan = { guaranteed: false };
+const DIAL = { W: 358, H: 214, L: 6, R: 14, T: 16, B: 30 };
+let shownP = 0;
+
+function planState() {
+  const primos = readNum($('#in-primos')), fates = readNum($('#in-fates'));
+  const pity = readNum($('#in-pity')), income = readNum($('#in-income'));
+  const pulls = fates + Math.floor((primos + income) / 160);
+  return { primos, fates, pity, income, pulls, guaranteed: plan.guaranteed };
+}
+
+function renderPlan(animateIt = true) {
+  const s = planState();
+  const maxPulls = 400;
+  const c = [1, 2, 3].map((copies) => featuredCdf({ pity: s.pity, guaranteed: s.guaranteed, copies, maxPulls }));
+  const at = (cdf, t) => cdf[Math.min(t, maxPulls)];
+  const p = at(c[0], s.pulls);
+
+  // Constellations and hint
+  ['#c0', '#c1', '#c2'].forEach((id, i) => {
+    const v = at(c[i], s.pulls);
+    $(id).textContent = v >= 0.995 ? '100%' : v < 0.005 ? '<1%' : Math.round(v * 100) + '%';
+    $(id).parentElement.querySelector('.star').style.opacity = (0.25 + 0.75 * v).toFixed(2);
+  });
+  const need90 = c[0].findIndex((v) => v >= 0.9);
+  $('#p-hint').textContent = s.pulls >= need90
+    ? `You're past 90% odds with ${s.pulls - need90} ${s.pulls - need90 === 1 ? 'pull' : 'pulls'} to spare.`
+    : `${need90 - s.pulls} more pulls (${fmt((need90 - s.pulls) * 160)} primogems) gets you to 90% odds.`;
+  $('#p-pulls').textContent = fmt(s.pulls);
+
+  // Geometry
+  const xMax = Math.max(180, Math.ceil((s.pulls + 12) / 45) * 45);
+  const { W, H, L, R, T, B } = DIAL;
+  const x = (t) => L + (t / xMax) * (W - L - R);
+  const y = (v) => T + (1 - v) * (H - T - B);
+  const line = (from, to) => {
+    let d = `M${x(from).toFixed(2)},${y(c[0][from]).toFixed(2)}`;
+    for (let t = from + 1; t <= to; t++) d += `L${x(t).toFixed(2)},${y(c[0][t]).toFixed(2)}`;
+    return d;
+  };
+  const mineTo = Math.min(s.pulls, xMax);
+  const dMine = mineTo > 0 ? line(0, mineTo) : `M${x(0)},${y(0)}L${x(0) + 0.01},${y(0)}`;
+  $('#dial-all').setAttribute('d', line(0, xMax));
+  $('#dial-mine').setAttribute('d', dMine);
+  $('#dial-wash').setAttribute('d', `${dMine}L${x(mineTo).toFixed(2)},${y(0)}L${x(0)},${y(0)}Z`);
+
+  // Axis
+  const axis = $('#dial-axis'); axis.innerHTML = '';
+  el('line', { class: 'base', x1: L, x2: W - R, y1: y(0), y2: y(0) }, axis);
+  el('line', { class: 'hair', x1: L, x2: W - R, y1: y(0.5), y2: y(0.5) }, axis);
+  el('text', { class: 'axis-text', x: W - R, y: y(0.5) - 5, 'text-anchor': 'end' }, axis).textContent = '50%';
+  for (let t = 0; t <= xMax; t += 45) {
+    el('text', { class: 'axis-text', x: x(t), y: H - 8, 'text-anchor': t === 0 ? 'start' : t === xMax ? 'end' : 'middle' }, axis).textContent = t === xMax ? `${t} pulls` : t;
+  }
+
+  // Marker
+  const mx = x(mineTo), my = y(c[0][mineTo]);
+  const yl = $('#dial-you-line'); yl.setAttribute('x1', mx); yl.setAttribute('x2', mx); yl.setAttribute('y1', my + 6); yl.setAttribute('y2', y(0));
+  const yt = $('#dial-you-text');
+  const right = mx > W * 0.62;
+  yt.setAttribute('x', right ? mx - 12 : mx + 12); yt.setAttribute('y', Math.max(T + 10, my - 10));
+  yt.setAttribute('text-anchor', right ? 'end' : 'start');
+  yt.textContent = `your ${fmt(s.pulls)}`;
+  $('#dial-label').textContent = `Chance of getting Skirk by pull count. With ${s.pulls} pulls the chance is ${(p * 100).toFixed(1)}%. 90% odds need ${need90} pulls.`;
+
+  playDial(shownP, p, animateIt && !reduce);
+  shownP = p;
+}
+
+function playDial(from, to, animated) {
+  const num = $('#p-num'), meteor = $('#meteor'), mine = $('#dial-mine');
+  const lede = [$('#dial-wash'), $('#dial-you-line'), $('#dial-you-text')];
+  if (!animated) {
+    num.textContent = (to * 100).toFixed(1);
+    const len = mine.getTotalLength(), pt = mine.getPointAtLength(len);
+    meteor.style.transform = `translate(${pt.x}px, ${pt.y}px)`;
+    mine.style.strokeDasharray = ''; lede.forEach((e) => (e.style.opacity = 1));
+    return;
+  }
+  const counter = { v: from * 100 };
+  // Hide what arrives later so the meteor reveals it, not the other way round.
+  [...lede, ...$$('#cons li')].forEach((e) => (e.style.opacity = 0));
+  const tl = createTimeline({ defaults: { ease: 'inOut(2)' } });
+  tl.add(svg.createDrawable(mine), { draw: ['0 0', '0 1'], duration: 1100 }, 0)
+    .add(meteor, { ...svg.createMotionPath(mine), duration: 1100 }, 0)
+    .add(counter, { v: to * 100, duration: 1100, onUpdate: () => (num.textContent = counter.v.toFixed(1)) }, 0)
+    .add(lede, { opacity: [0, 1], duration: 420, ease: 'out(3)' }, 800)
+    .add('#cons li', { opacity: [0, 1], translateY: [4, 0], duration: 360, delay: stagger(60), ease: 'out(3)' }, 1000);
+}
+
+$$('.seg button').forEach((b) => b.addEventListener('click', () => {
+  plan.guaranteed = b.dataset.guar === '1';
+  $$('.seg button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+  schedule(renderPlan);
+}));
+
+let timer;
+const schedule = (fn) => { clearTimeout(timer); timer = setTimeout(() => fn(true), 140); };
+
+/* =================== ARTIFACTS =================== */
+const piece = { main: 'atk_', level: 0, subs: { cr: 3.11, cd: 6.99, er: 5.18, def: 18.52 } };
+let shownA = 0, rolled = null;
+const fmtSub = (k, v) => (SUB[k].pct ? v.toFixed(1) : fmt(v)); // unit is rendered outside the animated span
+
+function renderSubs(subs, level) {
+  const ul = $('#subs'); ul.innerHTML = '';
+  for (const [k, v] of Object.entries(subs)) {
+    const li = document.createElement('li');
+    li.className = 'sub' + (k === 'cr' || k === 'cd' ? ' goal' : '');
+    li.dataset.key = k;
+    li.innerHTML = `<span class="name">${SUB[k].name}${SUB[k].pct && ['hp_', 'atk_', 'def_'].includes(k) ? '%' : ''}</span><span class="val"><span class="v">${fmtSub(k, v)}</span>${SUB[k].pct ? '%' : ''}</span><span class="rv"><i style="width:${Math.min(100, (v / (SUB[k].max * 6)) * 100).toFixed(1)}%"></i></span>`;
+    ul.appendChild(li);
+  }
+  $('#a-level').textContent = '+' + level;
+}
+
+function verdict(p) {
+  if (p >= 0.35) return ['Level it.', 'verdict-keep'];
+  if (p >= 0.15) return ['Level to +8, then decide.', 'verdict-maybe'];
+  return ['Feed it.', 'verdict-feed'];
+}
+
+function renderArtifacts(animated = true) {
+  const goal = readNum($('#in-goal'));
+  const { p, scores } = keepOrTrash({ subs: piece.subs, level: piece.level, mainKey: piece.main, goal });
+  const [word, cls] = verdict(p);
+  const odds = p >= 0.45 && p <= 0.55 ? 'About even odds' : p > 0.55 ? 'Better than even odds' : `Roughly ${Math.max(1, Math.round(p * 10))} in 10 odds`;
+  $('#a-lede').innerHTML = `<strong class="${cls}">${word}</strong> ${odds} it finishes at ${goal}+ crit value.`;
+
+  // Histogram
+  const bins = 9, lo = 10, w = 5, counts = new Array(bins).fill(0);
+  for (const v of scores) counts[Math.min(bins - 1, Math.max(0, Math.floor((v - lo) / w)))]++;
+  const max = Math.max(...counts);
+  const W = 358, H = 150, L = 4, R = 4, T = 22, B = 24, gap = 5;
+  const bw = (W - L - R) / bins;
+  const gB = $('#hist-bars'), gA = $('#hist-axis');
+  gB.innerHTML = ''; gA.innerHTML = '';
+  counts.forEach((n, i) => {
+    const h = Math.max(1.5, (n / max) * (H - T - B));
+    el('rect', { class: 'bar' + (lo + i * w >= goal ? ' hit' : ''), x: (L + i * bw + gap / 2).toFixed(2), y: (H - B - h).toFixed(2),
+      width: (bw - gap).toFixed(2), height: h.toFixed(2), rx: 2, style: 'transform-box: fill-box; transform-origin: 50% 100%' }, gB);
+  });
+  el('line', { class: 'base', x1: L, x2: W - R, y1: H - B, y2: H - B }, gA);
+  for (let v = 10; v <= 50; v += 10) {
+    el('text', { class: 'axis-text', x: L + ((v - lo) / w) * bw, y: H - 6, 'text-anchor': v === 10 ? 'start' : 'middle' }, gA).textContent = v;
+  }
+  const gx = L + ((goal - lo) / w) * bw;
+  el('line', { class: 'goal-line', x1: gx, x2: gx, y1: 10, y2: H - B }, gA);
+  el('text', { class: 'goal-text', x: gx + 5, y: 12 }, gA).textContent = `goal ${goal}`;
+  $('#hist-label').textContent = `Distribution of crit value at +20. ${(p * 100).toFixed(1)}% of outcomes reach ${goal} or more.`;
+
+  // Replacement estimate
+  const r = resinEstimate({ mainKey: 'atk_', mainProb: 0.2666, goal });
+  $('#r-goal').textContent = goal;
+  $('#r-med').innerHTML = `${fmt(r.median)} resin<small>${fmt(r.median / 180)} days of natural resin</small>`;
+  $('#r-p90').innerHTML = `${fmt(r.p90)} resin<small>${fmt(r.p90 / 180)} days of natural resin</small>`;
+
+  // Number + bars
+  const num = $('#a-num');
+  if (!animated || reduce) { num.textContent = (p * 100).toFixed(1); shownA = p; return; }
+  const counter = { v: shownA * 100 };
+  animate(counter, { v: p * 100, duration: 700, ease: 'inOut(2)', onUpdate: () => (num.textContent = counter.v.toFixed(1)) });
+  animate('#hist-bars rect', { scaleY: [0, 1], duration: 380, delay: stagger(24, { from: 'first' }), ease: 'out(3)' });
+  shownA = p;
+}
+
+$('#roll').addEventListener('click', () => {
+  const rng = mulberry32((Date.now() & 0xffffffff) >>> 0);
+  rolled = simulateToMax(piece.subs, piece.level, piece.main, rng);
+  $('#a-level').textContent = '+20';
+  $$('#subs .sub').forEach((li, i) => {
+    const k = li.dataset.key, v = rolled[k];
+    const val = li.querySelector('.val .v'), bar = li.querySelector('.rv i');
+    const w = Math.min(100, (v / (SUB[k].max * 6)) * 100).toFixed(1) + '%';
+    if (reduce) { val.textContent = fmtSub(k, v); bar.style.width = w; return; }
+    animate(val, { innerHTML: scrambleText({ text: fmtSub(k, v), chars: '0-9' }), duration: 700, delay: i * 70 });
+    animate(bar, { width: w, duration: 700, delay: i * 70, ease: 'out(3)' });
+  });
+  const cv = critValue(rolled), goal = readNum($('#in-goal'));
+  $('#roll-note').textContent = `This roll finished at ${cv.toFixed(1)} crit value${cv >= goal ? ', past your goal' : ', short of your goal'}. Every roll lands differently; the ${(shownA * 100).toFixed(1)}% covers all of them.`;
+  $('#roll').textContent = 'Roll again';
+  $('#unroll').hidden = false;
+});
+$('#unroll').addEventListener('click', () => {
+  renderSubs(piece.subs, piece.level);
+  $('#roll').textContent = 'Roll to +20'; $('#unroll').hidden = true; $('#roll-note').textContent = '';
+});
+
+/* =================== TIMERS =================== */
+const RESIN = { now: 143, cap: 200 };
+const dur = (ms) => {
+  const m = Math.max(0, Math.round(ms / 60000));
+  const d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mm = m % 60;
+  if (d) return `${d} ${d === 1 ? 'day' : 'days'} ${h} h`;
+  if (h) return `${h} h ${mm} min`;
+  return `${mm} min`;
+};
+function nextUtc(hour, weekday = null) {
+  const n = new Date(); const t = new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate(), hour));
+  while (t <= n || (weekday !== null && t.getUTCDay() !== weekday)) t.setUTCDate(t.getUTCDate() + 1);
+  return t - n;
+}
+function renderTimers() {
+  const toFull = (RESIN.cap - RESIN.now) * 8 * 60000;
+  const at = new Date(Date.now() + toFull).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  $('#resin-lede').innerHTML = `Full in <strong>${dur(toFull)}</strong>, at ${at}. One resin every 8 minutes.`;
+  const rows = [
+    { name: 'Parametric Transformer', state: 'Ready in ' + dur(52 * 3600000), frac: 1 - 52 / 166 },
+    { name: 'Expeditions', state: '3 of 5 back, next in ' + dur(72 * 60000), frac: 0.6 },
+    { name: 'Realm currency', state: '1,840 of 2,400', frac: 1840 / 2400 },
+    { name: 'Daily reset', state: 'In ' + dur(nextUtc(9)), frac: 1 - nextUtc(9) / 86400000 },
+    { name: 'Weekly reset', state: 'Monday, in ' + dur(nextUtc(9, 1)), frac: 1 - nextUtc(9, 1) / (7 * 86400000) },
+  ];
+  $('#timer-list').innerHTML = rows.map((r) => `
+    <div class="timer"><div class="timer-top"><span>${r.name}</span><span class="timer-state">${r.state}</span></div>
+    <div class="track"><i style="width:${(r.frac * 100).toFixed(1)}%"></i></div></div>`).join('');
+}
+function playRing() {
+  const ring = $('#ring');
+  if (reduce) { animate(svg.createDrawable(ring), { draw: `0 ${RESIN.now / RESIN.cap}`, duration: 0 }); return; }
+  animate(svg.createDrawable(ring), { draw: ['0 0', `0 ${RESIN.now / RESIN.cap}`], duration: 700, ease: 'out(3)' });
+}
+
+/* =================== TABS =================== */
+function show(tab, first = false) {
+  $$('.tab').forEach((t) => (t.dataset.tab === tab ? t.setAttribute('aria-current', 'page') : t.removeAttribute('aria-current')));
+  $$('.panel').forEach((p) => (p.hidden = p.id !== 'panel-' + tab));
+  const panel = $('#panel-' + tab);
+  if (!first && !reduce) animate(panel, { opacity: [0, 1], translateY: [8, 0], duration: 420, ease: 'out(3)' });
+  if (tab === 'plan') renderPlan(true);
+  if (tab === 'artifacts') renderArtifacts(true);
+  if (tab === 'timers') { renderTimers(); playRing(); }
+  if (!first) history.replaceState(null, '', '#' + tab);
+  window.scrollTo(0, 0);
+}
+$$('.tab').forEach((t) => t.addEventListener('click', () => show(t.dataset.tab)));
+
+/* =================== INIT =================== */
+bindStepper((id) => (id === 'in-goal' ? schedule(renderArtifacts) : schedule(renderPlan)));
+renderSubs(piece.subs, piece.level);
+const start = (location.hash || '#plan').slice(1);
+show(['plan', 'artifacts', 'timers', 'account'].includes(start) ? start : 'plan', true);
+</script>
+</body>
+</html>

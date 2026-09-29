@@ -1,0 +1,80 @@
+/*
+  Astrolabe design tokens.
+  Every color, size, radius, and duration in the app comes from here.
+  Components never hardcode hex values or pixel sizes that exist as tokens.
+*/
+
+:root {
+  /* ---------- Color: the night sky ---------- */
+  --ink: #141739;          /* page background, deep indigo night */
+  --well: #1c2050;         /* raised surfaces: sheets, input wells */
+  --well-2: #252a63;       /* pressed / selected surface */
+  --rule: #30357a;         /* hairlines that group content */
+  --starlight: #ece6d6;    /* primary text */
+  --dim: #a2a5cc;          /* secondary text */
+  --faint: #6c70a3;        /* tertiary text, axis labels */
+
+  /* ---------- Color: rarity (the wish meteor colors) ---------- */
+  /* These carry meaning. Gold means 5-star or "the thing you want". Never decorative. */
+  --gold: #e7b75f;
+  --gold-soft: rgb(231 183 95 / 0.16);
+  --violet: #b18cf0;       /* 4-star */
+  --blue: #74a9ee;         /* 3-star */
+
+  /* ---------- Color: verdicts ---------- */
+  --keep: var(--gold);
+  --maybe: #d6c9a8;
+  --feed: #e4708a;
+
+  /* ---------- Color: elements (tags only, never backgrounds) ---------- */
+  --pyro: #ef7a35;
+  --hydro: #4cc2f1;
+  --anemo: #74c2a8;
+  --electro: #b08fc2;
+  --dendro: #a5c83b;
+  --cryo: #9fd6e3;
+  --geo: #fab632;
+
+  /* ---------- Type ---------- */
+  --font-display: "Bodoni Moda", "Didot", "Bodoni 72", Georgia, serif;
+  --font-ui: "Source Sans 3", "Source Sans Pro", system-ui, sans-serif;
+
+  /* Major-third scale (1.25), 16px base */
+  --t-xs: 0.8rem;     /* 12.8 */
+  --t-sm: 0.875rem;   /* 14 */
+  --t-md: 1rem;       /* 16 */
+  --t-lg: 1.25rem;    /* 20 */
+  --t-xl: 1.5625rem;  /* 25 */
+  --t-2xl: 1.953rem;  /* 31 */
+  --t-3xl: 2.441rem;  /* 39 */
+  --t-hero: 4.768rem; /* 76, the one big answer per screen */
+
+  /* ---------- Space (4px grid) ---------- */
+  --s-1: 4px;  --s-2: 8px;  --s-3: 12px; --s-4: 16px;
+  --s-5: 24px; --s-6: 32px; --s-7: 48px; --s-8: 64px;
+
+  /* ---------- Shape ---------- */
+  --r-input: 10px;   /* input wells, steppers */
+  --r-sheet: 20px;   /* bottom sheets, dialogs */
+  --r-pill: 999px;   /* segmented controls, chips */
+
+  /* ---------- Motion ---------- */
+  --d-quick: 160ms;     /* taps, toggles */
+  --d-move: 420ms;      /* panel changes */
+  --d-signature: 1100ms;/* the one orchestrated moment per screen */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* ---------- Layout ---------- */
+  --gutter: 16px;
+  --column: 460px;     /* mobile-first reading column */
+  --tap: 44px;         /* minimum hit target */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --d-quick: 0ms;
+    --d-move: 0ms;
+    --d-signature: 0ms;
+  }
+}
