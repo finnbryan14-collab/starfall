@@ -105,7 +105,7 @@ for (const viewport of VIEWPORTS) {
     });
 
     // Both must have actually rendered the headline before we compare them.
-    await expect(app.getByText(/Skirk/)).toBeVisible();
+    await expect(app.getByRole('heading', { name: /Skirk/ })).toBeVisible();
     await expect(preview.getByText('Skirk returns Oct 13')).toBeVisible();
 
     const composer = await context.newPage();

@@ -1,7 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 
+import { FateDial } from '@/components/FateDial';
 import screen from '@/components/screen.module.css';
 import { AnswerBlock, SegmentedControl, StepperRow } from '@/components/ui';
 import { MAX_COPIES } from '@/engine/wish/featured';
@@ -32,6 +33,8 @@ export function PlanScreen() {
   const now = useMemo(() => new Date(), []);
   const { plan, ready, result, update } = usePlan(now);
   const [sheetOpen, setSheetOpen] = useState(false);
+  // The chart drives the numeral, so the redraw and the count are one moment.
+  const numeralRef = useRef<HTMLSpanElement>(null);
 
   if (!ready || !plan || !result) {
     // Holds the layout still rather than flashing a zero answer that then
@@ -59,6 +62,7 @@ export function PlanScreen() {
           value={formatPercent(result.chance)}
           unit="%"
           valueLabel={`${formatPercent(result.chance)} percent`}
+          valueRef={numeralRef}
         >
           {empty ? (
             <>Add your primogems to see your odds.</>
@@ -71,14 +75,13 @@ export function PlanScreen() {
           )}
         </AnswerBlock>
 
-        <figure style={{ margin: 0 }}>
-          <div className={screen.pending} style={{ aspectRatio: '358 / 214' }}>
-            Fate Dial — next task
-          </div>
-          <figcaption className={screen.caption}>
-            Chance of getting them by each pull. Gold is what your stash covers.
-          </figcaption>
-        </figure>
+        <FateDial
+          curve={result.curve}
+          pulls={result.pulls}
+          chance={result.chance}
+          numeralRef={numeralRef}
+          target={plan.target || undefined}
+        />
 
         <ul className={screen.cons} aria-label="Chance by constellation">
           {result.constellations.map((c) => (

@@ -18,7 +18,7 @@ Work top to bottom. Each task is small enough for one Claude Code session. Check
 - [x] Research current primogem income values; write `src/engine/income/defaults.ts` with `source` and `verifiedAt` on every field; `projectIncome(inputs, fromDate, toDate)`. **Done when** unit tests cover Welkin expiring mid-range and reset boundaries.
 - [x] `src/engine/calendar/banners.ts` with current and next phase windows (sources linked). **Done when** the planner can default the target date from a chosen banner.
 - [x] Plan screen UI: inputs, AnswerBlock, constellation row, income sheet. Persist plans in Dexie. **Done when** it matches the preview and survives reload.
-- [ ] Fate Dial component (SVG + d3-scale + d3-shape) with the signature animation from DESIGN.md. **Done when** input changes replay the animation once and reduced motion shows the end state instantly.
+- [x] Fate Dial component (SVG + d3-scale + d3-shape) with the signature animation from DESIGN.md. **Done when** input changes replay the animation once and reduced motion shows the end state instantly.
 - [x] Playwright test: enter the preview's example (11,200 primogems, 14 fates, pity 22, 50/50, 3,850 income) and assert 72.9% for C0.
 
 ## Phase 2: Artifacts
