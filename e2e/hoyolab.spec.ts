@@ -146,10 +146,13 @@ test.describe('HoYoLAB opt-in', () => {
 
   test('says what it costs before it asks for anything', async ({ page }) => {
     await page.goto('/account');
-    await page.getByRole('group').filter({ hasText: 'What it does' }).click();
+    // Scoped to the disclosure: the Backups panel warns about the same cookie,
+    // and this is about what the opt-in itself says before it is taken.
+    const disclosure = page.getByRole('group').filter({ hasText: 'What it does' });
+    await disclosure.click();
 
-    await expect(page.getByText(/reads your whole account/)).toBeVisible();
-    await expect(page.getByText(/not true to say it never leaves your device/)).toBeVisible();
+    await expect(disclosure.getByText(/reads your whole account/)).toBeVisible();
+    await expect(disclosure.getByText(/not true to say it never leaves your device/)).toBeVisible();
   });
 
   /**

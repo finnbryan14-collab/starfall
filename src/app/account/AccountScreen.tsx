@@ -15,6 +15,7 @@ import { useMountedNow } from '@/lib/use-now';
 
 import styles from './AccountScreen.module.css';
 import { useEnkaProfile } from './useEnkaProfile';
+import { BackupPanel } from './BackupPanel';
 import { HoyolabPanel } from './HoyolabPanel';
 import { WishImport } from './WishImport';
 
@@ -233,10 +234,7 @@ export function AccountScreen() {
 
         <HoyolabPanel uid={profile?.uid ?? null} />
 
-        <h2 className={screen.sec}>Backups</h2>
-        <p className={screen.body}>
-          Export everything as one JSON file, or bring a backup back in.
-        </p>
+        <BackupPanel />
 
         <h2 className={screen.sec}>Game data</h2>
         <p className={screen.body}>

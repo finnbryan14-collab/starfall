@@ -159,9 +159,23 @@ test.describe('Account screen', () => {
     await expect(page.getByText('Kamisato Ayaka')).toHaveCount(0);
   });
 
-  test('carries the fan-project notice', async ({ page }) => {
+  /** ROADMAP Phase 4: the notice appears in Account *and* the footer. */
+  test('carries the fan-project notice in both places', async ({ page }) => {
     await page.goto('/account');
-    await expect(page.getByText(/not affiliated with HoYoverse/)).toBeVisible();
+
+    await expect(page.locator('main').getByText(/not affiliated with HoYoverse/)).toBeVisible();
+    await expect(page.getByRole('contentinfo')).toContainText(/not affiliated with HoYoverse/);
+  });
+
+  test('carries the notice on every page, not only Account', async ({ page }) => {
+    // Somebody linked straight to /plan has to be able to see it too.
+    for (const path of ['/plan', '/artifacts', '/timers']) {
+      await page.goto(path);
+      await expect(page.getByRole('contentinfo'), path).toContainText(
+        /not affiliated with HoYoverse/,
+      );
+      await expect(page.getByRole('contentinfo'), path).toContainText(/paimon\.moe/);
+    }
   });
 
   /**

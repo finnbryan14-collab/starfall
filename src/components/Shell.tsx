@@ -27,6 +27,23 @@ export function Shell({ children }: { children: React.ReactNode }) {
         </header>
 
         <main>{children}</main>
+
+        {/*
+          The fan-project notice. On every page rather than only Account:
+          someone linked straight to /plan has to be able to see it too.
+        */}
+        <footer className={styles.footer}>
+          Starfall is a fan project and is not affiliated with HoYoverse. Game content and materials
+          are trademarks and copyrights of HoYoverse. Banner schedules from{' '}
+          <a href="https://paimon.moe" rel="noreferrer noopener" target="_blank">
+            paimon.moe
+          </a>{' '}
+          (MIT); character data from{' '}
+          <a href="https://enka.network" rel="noreferrer noopener" target="_blank">
+            Enka.Network
+          </a>
+          .
+        </footer>
       </div>
 
       <Nav />

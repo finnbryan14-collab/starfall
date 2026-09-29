@@ -33,6 +33,24 @@
   color: var(--faint);
 }
 
+/*
+ * Required on every page, not only Account: a fan project has to say so
+ * wherever a visitor lands. Sits above the tab bar's clearance.
+ */
+.footer {
+  margin-top: var(--s-8);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--rule);
+  color: var(--faint);
+  font-size: var(--t-xs);
+  max-width: 60ch;
+}
+
+.footer a {
+  color: var(--faint);
+  text-decoration: underline;
+}
+
 /* From 1024px the rail takes over and the column gains a second pane. */
 @media (min-width: 1024px) {
   .app {

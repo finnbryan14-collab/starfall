@@ -76,14 +76,43 @@ test.describe('Fate Dial with motion', () => {
     // Once settled the path is drawn in full.
     await expect.poll(() => drawnFraction(page), { timeout: 6000 }).toBeGreaterThan(0.99);
 
-    // Change an input, then catch the redraw partway through.
+    /*
+      Recorded rather than sampled. Polling for a partly-drawn frame is a race
+      against an animation that lasts well under a second, and it loses on a
+      loaded machine — which is a flake, not a finding. A MutationObserver
+      installed *before* the input changes sees every intermediate value, so
+      the assertion no longer depends on when Playwright happened to look.
+    */
+    await goldPath(page).evaluate((el) => {
+      const seen: number[] = [];
+      (window as unknown as { __dashSamples: number[] }).__dashSamples = seen;
+
+      const record = () => {
+        const dashArray = getComputedStyle(el).strokeDasharray;
+        if (!dashArray || dashArray === 'none') return;
+        const total = (el as unknown as SVGPathElement).getTotalLength();
+        if (total > 0) seen.push(Number.parseFloat(dashArray) / total);
+      };
+
+      new MutationObserver(record).observe(el, {
+        attributes: true,
+        attributeFilter: ['style', 'stroke-dasharray'],
+      });
+    });
+
     await setStepper(page, 'Primogems', 30_000);
+
     await expect
-      .poll(() => drawnFraction(page), {
-        timeout: 2500,
-        intervals: [16, 16, 16, 16, 32, 32, 64],
-      })
-      .toBeLessThan(0.9);
+      .poll(
+        () =>
+          page.evaluate(() =>
+            ((window as unknown as { __dashSamples?: number[] }).__dashSamples ?? []).some(
+              (fraction) => fraction < 0.9,
+            ),
+          ),
+        { timeout: 6000 },
+      )
+      .toBe(true);
 
     // And it finishes.
     await expect.poll(() => drawnFraction(page), { timeout: 6000 }).toBeGreaterThan(0.99);
