@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Bodoni_Moda, Source_Sans_3 } from 'next/font/google';
 
+import { ServiceWorker } from '@/components/ServiceWorker';
 import { Shell } from '@/components/Shell';
 
 import './globals.css';
@@ -40,6 +41,7 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
     <html lang="en" className={`${bodoniModa.variable} ${sourceSans3.variable}`}>
       <body>
         <Shell>{children}</Shell>
+        <ServiceWorker />
       </body>
     </html>
   );
