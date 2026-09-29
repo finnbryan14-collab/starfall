@@ -15,6 +15,7 @@ A Genshin Impact companion that answers two questions better than anything else:
 **Inputs:** target character, target date (defaults to the end of that character's banner), constellation goal (C0–C6), primogems, Intertwined Fates, current pity, guaranteed or not, Welkin days remaining, and income assumptions (editable in a sheet; see MATH.md §3).
 
 **Outputs:**
+
 - The chance of reaching the goal by the date, as the big answer.
 - The Fate Dial curve (DESIGN.md).
 - Chances for each constellation up to the goal (C0, C1, C2…).
@@ -22,6 +23,7 @@ A Genshin Impact companion that answers two questions better than anything else:
 - A projection of your primogem balance by date as a small line under the dial.
 
 **Acceptance:**
+
 - Changing any input updates results in under 50ms and replays the Fate Dial animation once.
 - With 90 pulls, pity 0, guaranteed, C0: shows 100%.
 - Plans save automatically and several can exist (e.g. "Skirk C1" and "Save for 7.2").
@@ -33,6 +35,7 @@ A Genshin Impact companion that answers two questions better than anything else:
 **Outputs:** the verdict and the chance of meeting the goal at +20, a histogram of final scores with the goal line, and a "Roll to +20" button that animates one sampled outcome.
 
 **Acceptance:**
+
 - Manual entry takes under 20 seconds on a phone (substat picker filters out the main stat and already-chosen stats).
 - Results are deterministic for the same input (seeded RNG) so the number doesn't jitter.
 
@@ -48,6 +51,7 @@ A Genshin Impact companion that answers two questions better than anything else:
 Original Resin, Parametric Transformer, expeditions, realm currency, daily and weekly reset. Each timer is set by tapping it and entering the current value.
 
 **Acceptance:**
+
 - Values stay correct after closing and reopening the app hours later.
 - With the app installed to the home screen, notifications fire for "resin full" and "transformer ready" (Phase 4; see ROADMAP).
 

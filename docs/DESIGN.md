@@ -19,18 +19,18 @@ Every screen gives one answer in a large Bodoni numeral and shows where that ans
 
 All values live in `design/tokens.css`. Copy it into `src/styles/tokens.css` and map it into Tailwind's theme. Never hardcode a hex value in a component.
 
-| Token | Hex | Role |
-|---|---|---|
-| `--ink` | `#141739` | Page background |
-| `--well` | `#1c2050` | Input wells, sheets |
-| `--rule` | `#30357a` | Hairlines that group content |
-| `--starlight` | `#ece6d6` | Primary text |
-| `--dim` | `#a2a5cc` | Secondary text |
-| `--faint` | `#8789c0` | Tertiary text, axis labels |
-| `--gold` | `#e7b75f` | 5★, the target, primary action |
-| `--violet` | `#b18cf0` | 4★ |
-| `--blue` | `#74a9ee` | 3★ |
-| `--feed` | `#e4708a` | "Feed it" verdicts, destructive actions |
+| Token         | Hex       | Role                                    |
+| ------------- | --------- | --------------------------------------- |
+| `--ink`       | `#141739` | Page background                         |
+| `--well`      | `#1c2050` | Input wells, sheets                     |
+| `--rule`      | `#30357a` | Hairlines that group content            |
+| `--starlight` | `#ece6d6` | Primary text                            |
+| `--dim`       | `#a2a5cc` | Secondary text                          |
+| `--faint`     | `#8789c0` | Tertiary text, axis labels              |
+| `--gold`      | `#e7b75f` | 5★, the target, primary action          |
+| `--violet`    | `#b18cf0` | 4★                                      |
+| `--blue`      | `#74a9ee` | 3★                                      |
+| `--feed`      | `#e4708a` | "Feed it" verdicts, destructive actions |
 
 Element colors (`--pyro` … `--geo`) appear only on small element tags next to character names.
 
@@ -38,13 +38,13 @@ Element colors (`--pyro` … `--geo`) appear only on small element tags next to 
 
 Major third (1.25) from a 16px base. Line lengths stay under 70 characters. Body text is 16px with 1.5 line height; secondary text is 14px.
 
-| Use | Face | Size | Notes |
-|---|---|---|---|
-| The answer (one per screen) | Bodoni Moda 500 | `--t-hero` (76px) | Tabular, tight tracking (-0.02em) |
-| Screen title | Bodoni Moda 500 italic | `--t-2xl` | Sentence case |
-| Section heading | Source Sans 3 600 | `--t-lg` | Sentence case, never all caps |
-| Body | Source Sans 3 400 | `--t-md` | |
-| Secondary, axis labels | Source Sans 3 400 | `--t-sm` / `--t-xs` | `--dim` or `--faint` |
+| Use                         | Face                   | Size                | Notes                             |
+| --------------------------- | ---------------------- | ------------------- | --------------------------------- |
+| The answer (one per screen) | Bodoni Moda 500        | `--t-hero` (76px)   | Tabular, tight tracking (-0.02em) |
+| Screen title                | Bodoni Moda 500 italic | `--t-2xl`           | Sentence case                     |
+| Section heading             | Source Sans 3 600      | `--t-lg`            | Sentence case, never all caps     |
+| Body                        | Source Sans 3 400      | `--t-md`            |                                   |
+| Secondary, axis labels      | Source Sans 3 400      | `--t-sm` / `--t-xs` | `--dim` or `--faint`              |
 
 Load fonts with `next/font/google` so there is no layout shift.
 
@@ -94,22 +94,23 @@ Motion explains a change the person caused. Nothing moves on its own except coun
 
 **Library:** anime.js v4 (`animejs` on npm). In React, wrap each animated component with `createScope({ root })` inside `useEffect` and call `scope.revert()` on cleanup (this is the official React pattern). Put shared helpers in `src/motion/`.
 
-| Moment | Trigger | anime.js tools | Duration |
-|---|---|---|---|
-| Fate Dial redraw | Load, input change | `svg.createDrawable` on the gold path (`draw: '0 0' → '0 1'`), `svg.createMotionPath` for the meteor, number tween on a JS object with `onUpdate` | `--d-signature` |
-| Constellation chances (C0/C1/C2) | After the meteor lands | `stagger(60)` on opacity and a 4px rise | 360ms |
-| Keep-or-trash histogram | Artifacts tab opens, goal changes | `stagger(24, { from: 'first' })` on bar `scaleY` from 0 | 520ms total |
-| "Roll to +20" sample | Button press | `scrambleText({ text, chars: '0-9' })` on each substat's number (via `innerHTML`) | 700ms |
-| Resin ring | Timers tab opens | `createDrawable` on the ring arc | 700ms |
-| Tab change | Nav tap | `animate` opacity 0→1 and `translateY` 8px→0 on the incoming panel only | `--d-move` |
+| Moment                           | Trigger                           | anime.js tools                                                                                                                                    | Duration        |
+| -------------------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
+| Fate Dial redraw                 | Load, input change                | `svg.createDrawable` on the gold path (`draw: '0 0' → '0 1'`), `svg.createMotionPath` for the meteor, number tween on a JS object with `onUpdate` | `--d-signature` |
+| Constellation chances (C0/C1/C2) | After the meteor lands            | `stagger(60)` on opacity and a 4px rise                                                                                                           | 360ms           |
+| Keep-or-trash histogram          | Artifacts tab opens, goal changes | `stagger(24, { from: 'first' })` on bar `scaleY` from 0                                                                                           | 520ms total     |
+| "Roll to +20" sample             | Button press                      | `scrambleText({ text, chars: '0-9' })` on each substat's number (via `innerHTML`)                                                                 | 700ms           |
+| Resin ring                       | Timers tab opens                  | `createDrawable` on the ring arc                                                                                                                  | 700ms           |
+| Tab change                       | Nav tap                           | `animate` opacity 0→1 and `translateY` 8px→0 on the incoming panel only                                                                           | `--d-move`      |
 
 **Easing:** `out(3)` for things arriving, `inOut(2)` for things traveling, `spring({ bounce: 0.25 })` only for toggles.
 
-**Reduced motion:** `src/motion/` is the single place this is enforced. It checks `matchMedia('(prefers-reduced-motion: reduce)')` — with a live listener, so a mid-session change is picked up — and jumps straight to final states. Note the media query in `tokens.css` only zeroes the *CSS* durations; anime.js never reads CSS custom properties, so JS animations are unaffected by it and must be guarded in the helpers.
+**Reduced motion:** `src/motion/` is the single place this is enforced. It checks `matchMedia('(prefers-reduced-motion: reduce)')` — with a live listener, so a mid-session change is picked up — and jumps straight to final states. Note the media query in `tokens.css` only zeroes the _CSS_ durations; anime.js never reads CSS custom properties, so JS animations are unaffected by it and must be guarded in the helpers.
 
 **Never:** scroll-triggered fade-ups on every section, hover lifts on every row, looping ambient animation, parallax, confetti.
 
 **Gotchas found while building the preview (anime.js 4.5):**
+
 - `scrambleText` must target `innerHTML`, and a trailing `%` in the text gets treated as a unit and doubled. Keep units in a sibling element and scramble only the number.
 - Timeline children don't apply their `from` values until they start. Anything that should appear later (the gold wash, the "your 108" label, the constellation row) needs `opacity: 0` set before the timeline begins, or it flashes in at full opacity first.
 - `svg.createMotionPath(path)` works on an SVG `<g>` inside the same SVG with no extra scaling math; place the group's children at the origin.

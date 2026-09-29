@@ -1,0 +1,12 @@
+.next/
+out/
+build/
+node_modules/
+pnpm-lock.yaml
+playwright-report/
+test-results/
+next-env.d.ts
+
+# Delivered as-is; formatting it would create noise against the original.
+design/preview.html
+gen_preview.html

@@ -9,6 +9,7 @@ Starfall is local-first. Everything the user enters or imports lives in IndexedD
 **Endpoint:** `GET https://enka.network/api/uid/{uid}/` (full docs: https://github.com/EnkaNetwork/API-docs/blob/master/api.md). Add `?info` for the profile only.
 
 **Rules:**
+
 - Call it from `src/app/api/enka/[uid]/route.ts`, not the browser. Send a descriptive `User-Agent` (e.g. `Starfall/0.1 (+contact url)`).
 - The response includes `ttl` (seconds). Cache by UID until it expires; don't refetch before then. Show "Updated 3 min ago" and a disabled refresh button with the remaining wait.
 - Handle errors by status with a plain-language message each: bad UID format, UID not found, game maintenance, rate limited, server error. Confirm the exact status codes against the docs when implementing.
@@ -30,6 +31,7 @@ For users who want every artifact, not just showcased ones. Community scanners (
 Genshin exposes wish history only through a temporary URL the game generates when you open **Wish → History**. The URL carries an `authkey` that lasts about a day and can only read history.
 
 **Flow:**
+
 1. Account → Import wishes shows platform-specific steps for getting the URL (PC PowerShell script, Android, iOS). Link to paimon.moe's import page for the scripts rather than hosting our own.
 2. User pastes the URL. Parse `authkey`, `authkey_ver`, `sign_type`, `lang`, `game_biz`, `region`, and the host from it. Don't hardcode the host; different servers and versions use different domains.
 3. `src/app/api/wishes/route.ts` pages through `getGachaLog` for each banner type (`size=20`, cursor via `end_id` = last item's `id`), with about 300ms between requests. paimon.moe does the same: a server-side proxy for CORS with the logic on the client.
@@ -58,13 +60,13 @@ Regenerate static data each patch (roughly every six weeks). The script should f
 
 ```ts
 db.version(1).stores({
-  profile: "uid",                          // Enka profile snapshot + fetchedAt + ttl
-  characters: "[uid+avatarId]",            // from Enka or GOOD
-  artifacts: "id, setKey, slotKey, location",
-  wishes: "id, gachaType, time",           // merged wish history
-  plans: "id",                             // saved wish plans (target, date, inputs)
-  timers: "id",                            // timer state (setAt, rule, value)
-  settings: "key",
+  profile: 'uid', // Enka profile snapshot + fetchedAt + ttl
+  characters: '[uid+avatarId]', // from Enka or GOOD
+  artifacts: 'id, setKey, slotKey, location',
+  wishes: 'id, gachaType, time', // merged wish history
+  plans: 'id', // saved wish plans (target, date, inputs)
+  timers: 'id', // timer state (setAt, rule, value)
+  settings: 'key',
 });
 ```
 

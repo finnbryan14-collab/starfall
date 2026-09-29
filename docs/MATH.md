@@ -34,7 +34,7 @@ Community write-ups describe a hidden loss counter that makes Capturing Radiance
 interface FiftyFiftyModel {
   // chance a non-guaranteed 5★ is the featured character, given hidden state
   featuredChance(state: FiftyFiftyState): number;
-  next(state: FiftyFiftyState, outcome: "won" | "radiance" | "lost"): FiftyFiftyState;
+  next(state: FiftyFiftyState, outcome: 'won' | 'radiance' | 'lost'): FiftyFiftyState;
 }
 ```
 
@@ -42,9 +42,10 @@ Ship `consolidated55` as the default (stateless, 0.55). Leave a `counterModel` s
 
 ### Constellation targets
 
-"Get the character at C*k*" means *k*+1 copies. Run a forward dynamic program over pulls with state `(copies, guaranteed, pity)`; the probability mass that reaches the target copy count at pull *t* gives the CDF. See `featuredCdf` in the prototype. It handles 400 pulls × 7 copies in a few milliseconds, so no worker is needed.
+"Get the character at C*k*" means _k_+1 copies. Run a forward dynamic program over pulls with state `(copies, guaranteed, pity)`; the probability mass that reaches the target copy count at pull _t_ gives the CDF. See `featuredCdf` in the prototype. It handles 400 pulls × 7 copies in a few milliseconds, so no worker is needed.
 
 **Tests:**
+
 - Guaranteed, pity 0, 1 copy → CDF(90) = 1.
 - Not guaranteed, pity 0, 1 copy → CDF(180) = 1 and CDF(90) ≈ 0.6345.
 - CDF is non-decreasing and ends at 1 once `pulls ≥ (90 − pity) + 90 × copies`.
@@ -76,15 +77,15 @@ Pulls available by a date = fates + floor((primos + projected income) / 160) + o
 
 Income sources (user can toggle and override each):
 
-| Source | Shape |
-|---|---|
-| Daily commissions | per day |
-| Blessing of the Welkin Moon | per day while active (user enters days remaining) |
-| Endgame modes (Spiral Abyss, Imaginarium Theater, and any newer mode) | per reset, with an expected-completion slider |
-| Events | per patch, user estimate |
-| Maintenance and livestream compensation | per patch |
-| Paimon's Bargains fates (starglitter) | per month, capped |
-| Battle Pass | per patch, if owned |
+| Source                                                                | Shape                                             |
+| --------------------------------------------------------------------- | ------------------------------------------------- |
+| Daily commissions                                                     | per day                                           |
+| Blessing of the Welkin Moon                                           | per day while active (user enters days remaining) |
+| Endgame modes (Spiral Abyss, Imaginarium Theater, and any newer mode) | per reset, with an expected-completion slider     |
+| Events                                                                | per patch, user estimate                          |
+| Maintenance and livestream compensation                               | per patch                                         |
+| Paimon's Bargains fates (starglitter)                                 | per month, capped                                 |
+| Battle Pass                                                           | per patch, if owned                               |
 
 **Do not hardcode amounts from memory.** In Phase 1, research the current values, then store them in `src/engine/income/defaults.ts` with a `source` URL and `verifiedAt` date on every field. Show "Assumptions checked Sep 2026" in the income sheet so stale defaults are visible.
 
@@ -96,42 +97,42 @@ Patch cadence: versions run about six weeks in two ~three-week banner phases (7.
 
 ### Drop model (5★ from AR45+ domains)
 
-| Fact | Value |
-|---|---|
-| Resin per run | 20 (condensed resin: 40 for double drops) |
-| 5★ per run | about 1.07 on average (one guaranteed, ~7% chance of a second) |
-| Set | 50/50 between the domain's two sets |
-| Slot | 20% each: flower, plume, sands, goblet, circlet |
+| Fact             | Value                                                                            |
+| ---------------- | -------------------------------------------------------------------------------- |
+| Resin per run    | 20 (condensed resin: 40 for double drops)                                        |
+| 5★ per run       | about 1.07 on average (one guaranteed, ~7% chance of a second)                   |
+| Set              | 50/50 between the domain's two sets                                              |
+| Slot             | 20% each: flower, plume, sands, goblet, circlet                                  |
 | Initial substats | 4 lines 20% of the time from domains, 34% from bosses and strongbox; otherwise 3 |
 
 ### Main stat chances
 
-| Sands | | Goblet | | Circlet | |
-|---|---|---|---|---|---|
-| HP% | 26.68% | HP% | 19.25% | HP% | 22% |
-| ATK% | 26.66% | ATK% | 19.25% | ATK% | 22% |
-| DEF% | 26.66% | DEF% | 19.00% | DEF% | 22% |
-| Energy Recharge | 10% | Each elemental / physical DMG% (8 types) | 5% each | CRIT Rate | 10% |
-| Elemental Mastery | 10% | Elemental Mastery | 2.5% | CRIT DMG | 10% |
-| | | | | Healing Bonus | 10% |
-| | | | | Elemental Mastery | 4% |
+| Sands             |        | Goblet                                   |         | Circlet           |     |
+| ----------------- | ------ | ---------------------------------------- | ------- | ----------------- | --- |
+| HP%               | 26.68% | HP%                                      | 19.25%  | HP%               | 22% |
+| ATK%              | 26.66% | ATK%                                     | 19.25%  | ATK%              | 22% |
+| DEF%              | 26.66% | DEF%                                     | 19.00%  | DEF%              | 22% |
+| Energy Recharge   | 10%    | Each elemental / physical DMG% (8 types) | 5% each | CRIT Rate         | 10% |
+| Elemental Mastery | 10%    | Elemental Mastery                        | 2.5%    | CRIT DMG          | 10% |
+|                   |        |                                          |         | Healing Bonus     | 10% |
+|                   |        |                                          |         | Elemental Mastery | 4%  |
 
 ### Substats
 
 New substat lines are picked by weight among stats not already present and not equal to the main stat:
 
-| Stat | Weight | Max roll (5★) |
-|---|---|---|
-| HP | 6 | 298.75 |
-| ATK | 6 | 19.45 |
-| DEF | 6 | 23.15 |
-| HP% | 4 | 5.83% |
-| ATK% | 4 | 5.83% |
-| DEF% | 4 | 7.29% |
-| Energy Recharge | 4 | 6.48% |
-| Elemental Mastery | 4 | 23.31 |
-| CRIT Rate | 3 | 3.89% |
-| CRIT DMG | 3 | 7.77% |
+| Stat              | Weight | Max roll (5★) |
+| ----------------- | ------ | ------------- |
+| HP                | 6      | 298.75        |
+| ATK               | 6      | 19.45         |
+| DEF               | 6      | 23.15         |
+| HP%               | 4      | 5.83%         |
+| ATK%              | 4      | 5.83%         |
+| DEF%              | 4      | 7.29%         |
+| Energy Recharge   | 4      | 6.48%         |
+| Elemental Mastery | 4      | 23.31         |
+| CRIT Rate         | 3      | 3.89%         |
+| CRIT DMG          | 3      | 7.77%         |
 
 - Each roll is 70%, 80%, 90%, or 100% of the max, uniformly.
 - Upgrades happen at +4, +8, +12, +16, +20. A 3-line piece gains its 4th line at +4; after that each upgrade picks one of the four lines uniformly.
@@ -145,11 +146,11 @@ Monte Carlo, seeded, 20,000 trials, in a Web Worker (use Comlink). Input: the pi
 
 Output: P(goal met at +20), the distribution of final scores for the histogram, and a verdict:
 
-| P(goal) | Verdict |
-|---|---|
-| ≥ 35% | Level it |
-| 15–35% | Level to +8, then decide (re-run with the new state) |
-| < 15% | Feed it |
+| P(goal) | Verdict                                              |
+| ------- | ---------------------------------------------------- |
+| ≥ 35%   | Level it                                             |
+| 15–35%  | Level to +8, then decide (re-run with the new state) |
+| < 15%   | Feed it                                              |
 
 Thresholds live in one config object so they're easy to tune.
 
@@ -174,13 +175,13 @@ Newer crafting paths (Sanctifying Elixir via the Artifact Transmuter, which guar
 
 ## 5. Timers
 
-| Timer | Rule |
-|---|---|
-| Original Resin | +1 every 8 minutes up to the cap (200 as of recent versions; verify) |
-| Parametric Transformer | Usable again about 7 days after use (verify exact hours) |
-| Expeditions | 4, 8, 12, or 20 hours, per slot |
-| Realm currency | User enters current amount, cap, and hourly rate from their teapot |
-| Daily reset | 04:00 server time (America server: UTC−5) |
+| Timer                  | Rule                                                                 |
+| ---------------------- | -------------------------------------------------------------------- |
+| Original Resin         | +1 every 8 minutes up to the cap (200 as of recent versions; verify) |
+| Parametric Transformer | Usable again about 7 days after use (verify exact hours)             |
+| Expeditions            | 4, 8, 12, or 20 hours, per slot                                      |
+| Realm currency         | User enters current amount, cap, and hourly rate from their teapot   |
+| Daily reset            | 04:00 server time (America server: UTC−5)                            |
 
 Timers compute from a stored `setAt` timestamp and the rule, never from a ticking counter, so they stay correct when the app is closed.
 

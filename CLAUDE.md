@@ -4,16 +4,16 @@ A Genshin Impact companion app: a probability-first wish planner, an artifact ke
 
 ## Read first
 
-| File | What's in it |
-|---|---|
-| `docs/SPEC.md` | What v1 does and its acceptance criteria |
-| `docs/ROADMAP.md` | The ordered task list. Work from here. |
-| `docs/MATH.md` | Every probability model, with test cases and sources |
-| `docs/DATA.md` | Enka, wish history, GOOD import, static data, storage schema |
-| `docs/DESIGN.md` | Visual direction, tokens, motion rules, copy voice |
-| `design/preview.html` | Working visual reference: open it in a browser |
-| `design/tokens.css` | Design tokens (source of truth for color, type, space, motion) |
-| `docs/DECISIONS.md` | Why things are the way they are. Append when you make a call. |
+| File                  | What's in it                                                   |
+| --------------------- | -------------------------------------------------------------- |
+| `docs/SPEC.md`        | What v1 does and its acceptance criteria                       |
+| `docs/ROADMAP.md`     | The ordered task list. Work from here.                         |
+| `docs/MATH.md`        | Every probability model, with test cases and sources           |
+| `docs/DATA.md`        | Enka, wish history, GOOD import, static data, storage schema   |
+| `docs/DESIGN.md`      | Visual direction, tokens, motion rules, copy voice             |
+| `design/preview.html` | Working visual reference: open it in a browser                 |
+| `design/tokens.css`   | Design tokens (source of truth for color, type, space, motion) |
+| `docs/DECISIONS.md`   | Why things are the way they are. Append when you make a call.  |
 
 ## Stack
 
@@ -46,9 +46,11 @@ scripts/          build-static-data.ts and other generators
 
 ```
 pnpm dev          # local dev server
-pnpm test         # Vitest
-pnpm test:e2e     # Playwright
+pnpm test         # Vitest (watch: pnpm test:watch)
+pnpm test:e2e     # Playwright, at 390x844 and 1280x800
 pnpm lint         # ESLint + Prettier check
+pnpm format       # Prettier write
+pnpm typecheck    # tsc --noEmit
 pnpm build        # production build
 ```
 
@@ -57,12 +59,14 @@ Update this section if the scripts change.
 ## Rules
 
 **Engine**
+
 - `src/engine/` is pure and deterministic. Randomness uses a seeded RNG passed in as an argument.
 - Every model in MATH.md gets its listed tests before its UI is built.
 - Game constants that could change between patches carry a `source` URL and `verifiedAt` date next to the value.
 - Don't state game numbers from memory. If a number isn't in MATH.md or DATA.md, look it up and cite it.
 
 **Design**
+
 - Use tokens only. No hex values or raw pixel sizes in components when a token exists.
 - One big answer per screen (Bodoni numeral). Everything else stays quiet.
 - Gold means 5★ or "your target." Never decorative.
@@ -70,17 +74,20 @@ Update this section if the scripts change.
 - Match `design/preview.html` unless DESIGN.md says otherwise.
 
 **Motion**
+
 - All animation goes through `src/motion/` and anime.js. Inside React, use `createScope({ root })` in `useEffect` and `revert()` on cleanup.
 - Motion responds to something the person did. No looping ambient animation, no scroll-triggered fade-ins on every section.
 - Always honor `prefers-reduced-motion` by jumping to the end state.
 
 **Data and privacy**
+
 - Enka and wish-history requests go through our route handlers, never directly from the browser.
 - Respect Enka's `ttl`. Never retry on 429 without waiting.
 - Never log, persist, or send the wish-history authkey anywhere except the one proxied request.
 - No HoYoLAB cookies, no game memory reading, no input automation.
 
 **Accessibility**
+
 - 44px minimum tap targets, visible gold focus rings, 4.5:1 text contrast.
 - Rarity is never color alone; show ★ counts too.
 - Charts get an `aria-label` sentence and a hidden data table.
@@ -96,3 +103,13 @@ Update this section if the scripts change.
 ## Definition of done
 
 Tests pass, lint is clean, reduced motion works, the screen works at 390px and 1280px, keyboard focus is visible, and the ROADMAP box is checked.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
