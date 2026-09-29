@@ -28,6 +28,32 @@ export async function setTimer(
   return row;
 }
 
+/**
+ * Records a reading that was true at some moment other than now.
+ *
+ * HoYoLAB reports countdowns, not start times, so importing one means placing
+ * the reading in the past — see engine/timers/from-notes. Existing config is
+ * kept, because the teapot rate and cap are the player's settings, not the
+ * import's.
+ */
+export async function setTimerAt(
+  id: string,
+  value: number,
+  setAt: number,
+  config?: Record<string, number>,
+): Promise<TimerRow> {
+  const existing = await db.timers.get(id);
+  const row: TimerRow = {
+    id,
+    setAt,
+    value,
+    config: { ...existing?.config, ...config },
+    updatedAt: Date.now(),
+  };
+  await db.timers.put(row);
+  return row;
+}
+
 /** Updates configuration without restarting the timer. */
 export async function setTimerConfig(
   id: string,

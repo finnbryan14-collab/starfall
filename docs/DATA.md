@@ -40,6 +40,12 @@ Genshin exposes wish history only through a temporary URL the game generates whe
 
 **Banner type codes:** 301 character event (400 is the second character banner and shares pity with 301), 302 weapon, 200 standard, 100 beginner, 500 chronicled. Verify 400 and 500 with a real import.
 
+**Which fate each spends:** 301, 400, 302 and 500 take **Intertwined Fate** and so draw on a wish plan's budget; 100 and 200 take **Acquaint Fate** and do not. Sources on `INTERTWINED_BANNERS` in `src/engine/wish/history.ts`.
+
+**The API host is not the pasted host.** The URL the game produces points at a webview page (`gs.hoyoverse.com/...`). The log itself is served from `public-operation-hk4e-sg.hoyoverse.com/gacha_info/api/getGachaLog`, or `public-operation-hk4e.mihoyo.com` for China — which of the two is chosen by the region in the pasted URL, not hardcoded. paimon.moe does the same.
+
+**Timestamps have no timezone.** `time` is the _server's_ local time: America UTC-5, Europe UTC+1, everything else UTC+8. Reading it as UTC puts every America pull five hours early.
+
 **Derived stats:** pity at each 5★, 50/50 record, Capturing Radiance triggers (a win recorded right after a loss is still a guarantee; only non-guaranteed wins count as 50/50 wins), average pulls per 5★ compared with the 62.3 expected value.
 
 ## 4. Static game data
@@ -50,9 +56,29 @@ Genshin exposes wish history only through a temporary URL the game generates whe
 
 Regenerate static data each patch (roughly every six weeks). The script should fail loudly if a character in a user's Enka import is missing from the data.
 
-## 5. Things we deliberately don't do in v1
+## 5. HoYoLAB, behind an explicit opt-in
 
-- **HoYoLAB login cookies** (live resin, real-time notes). They grant broad account access. If added later, keep the cookie on-device, encrypted, and never on our server.
+This section originally read "deliberately not in v1". That was reversed on 2026-09-29 (see DECISIONS) once it was clear how much a cookie unlocks: it is the difference between a planner you feed and one that feeds itself.
+
+**Three endpoints, all overseas (`os_*` servers), all signed with a `DS` header.** Shapes follow `genshin.py`, the most complete public record of this unofficial API — https://github.com/thesadru/genshin.py.
+
+| What                                                              | Endpoint                                                                                 |
+| ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Real-time notes (resin, commissions, transformer, realm currency) | `GET sg-public-api.hoyolab.com/event/game_record/genshin/api/dailyNote?server=&role_id=` |
+| Traveler's Diary (primogem income by source)                      | `GET sg-hk4e-api.hoyolab.com/event/ysledgeros/month_info?region=&uid=&month=&lang=`      |
+| Mint a wish authkey                                               | `POST api-account-os.hoyoverse.com/binding/api/genAuthKeyByCookieToken`                  |
+
+**Rules:**
+
+- **Opt-in, and off by default.** Everything that works without a cookie keeps working. An e2e test asserts no request is made before the player opts in.
+- **Only the cookies these three calls need are kept**: `ltoken_v2` plus `ltuid_v2`/`ltmid_v2` for the Chronicle, and `cookie_token_v2` + `account_mid_v2` + `account_id_v2` to mint a key. A pasted header is filtered _before the first write_, so the rest never reaches IndexedDB.
+- **The cookie lives on the device**, and is sent in a POST body — never a query string, which would put a credential in every access log it passes.
+- **It does transit our proxy**, because a browser cannot set a `Cookie` header cross-origin and cannot compute the `DS` signature without the salt. Nothing is stored or logged there. The Account screen says this plainly rather than claiming the cookie never leaves the device.
+- The `DS` salt is an app constant that changes with HoYoLAB app versions. When every request starts returning -100, that is the first thing to check (`src/lib/hoyolab.server.ts`).
+- Retcodes are read out of a 200 body, not the HTTP status. `10102` and `10104` mean the player has the Chronicle or Real-Time Notes switched off, which is their fix to make, not a broken cookie.
+
+## 6. Things we deliberately don't do in v1
+
 - **Reading game memory or automating input.** Out of scope permanently; it risks bans.
 - **Accounts or sync.** Local-first with JSON export/import in Account → Backups. Sync is a backlog item, not part of v1.
 

@@ -8,8 +8,27 @@
  * domain could be pointed at internal addresses.
  */
 
-/** The gacha log lives under this path on whichever host the URL names. */
-export const GACHA_LOG_PATH = '/event/gacha_info/api/getGachaLog';
+/** Path the gacha log is served at. */
+export const GACHA_LOG_PATH = '/gacha_info/api/getGachaLog';
+
+/**
+ * Hosts that actually serve the gacha log.
+ *
+ * The URL the game hands you points at a webview page (`gs.hoyoverse.com/...`),
+ * not at the API, so the request has to be re-pointed. paimon.moe — the
+ * reference implementation DATA.md names — does exactly this:
+ *
+ *   https://github.com/MadeBaruna/paimon-moe/blob/main/src/routes/wish/import.svelte
+ *   verifiedAt: 2026-09-29
+ *
+ * DATA.md's "don't hardcode the host" still holds, and is honoured in the right
+ * place: which of these two is used comes from the region in the pasted URL, and
+ * the pasted host is still validated against the allowlist.
+ */
+export const GACHA_API_HOSTS = {
+  overseas: 'public-operation-hk4e-sg.hoyoverse.com',
+  china: 'public-operation-hk4e.mihoyo.com',
+} as const;
 
 /**
  * Hosts the proxy will forward to.
@@ -69,6 +88,38 @@ export function parseWishAuth(raw: string): WishAuth | null {
   };
 }
 
+/** Which API host serves this account, from its region rather than its URL. */
+export function gachaApiHost(auth: WishAuth): string {
+  const china = auth.gameBiz === 'hk4e_cn' || (auth.region ?? '').startsWith('cn_');
+  return china ? GACHA_API_HOSTS.china : GACHA_API_HOSTS.overseas;
+}
+
+/**
+ * A wish URL from an authkey that did not come from a pasted link.
+ *
+ * `genAuthKeyByCookieToken` returns the key alone, but the whole import path
+ * downstream takes a URL. Building one here keeps that path single: a minted
+ * key and a pasted link go through exactly the same parsing and the same host
+ * validation, rather than a second code path that could drift.
+ */
+export function buildWishUrlFromAuthkey(input: {
+  authkey: string;
+  region: string;
+  gameBiz?: string;
+}): string {
+  const china = input.region.startsWith('cn_');
+  const url = new URL(`https://${china ? GACHA_API_HOSTS.china : GACHA_API_HOSTS.overseas}/`);
+
+  url.searchParams.set('authkey_ver', '1');
+  url.searchParams.set('sign_type', '2');
+  url.searchParams.set('lang', 'en');
+  url.searchParams.set('game_biz', input.gameBiz ?? (china ? 'hk4e_cn' : 'hk4e_global'));
+  url.searchParams.set('region', input.region);
+  url.searchParams.set('authkey', input.authkey);
+
+  return url.toString();
+}
+
 export type GachaLogQuery = {
   auth: WishAuth;
   gachaType: string;
@@ -80,7 +131,7 @@ export type GachaLogQuery = {
 
 /** Builds one page request. */
 export function buildGachaLogUrl({ auth, gachaType, endId, size = 20 }: GachaLogQuery): string {
-  const url = new URL(`https://${auth.host}${GACHA_LOG_PATH}`);
+  const url = new URL(`https://${gachaApiHost(auth)}${GACHA_LOG_PATH}`);
   const params = url.searchParams;
 
   params.set('authkey_ver', auth.authkeyVer);
@@ -90,6 +141,9 @@ export function buildGachaLogUrl({ auth, gachaType, endId, size = 20 }: GachaLog
   params.set('game_biz', auth.gameBiz);
   if (auth.region) params.set('region', auth.region);
   params.set('gacha_type', gachaType);
+  // genshin.py sends both; the API has wanted `real_gacha_type` since the
+  // Chronicled Wish banner arrived.
+  params.set('real_gacha_type', gachaType);
   params.set('size', String(Math.min(20, Math.max(1, size))));
   params.set('end_id', endId ?? '0');
   params.set('authkey', auth.authkey);

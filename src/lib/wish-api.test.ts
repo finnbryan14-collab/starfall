@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildGachaLogUrl,
+  buildWishUrlFromAuthkey,
   failureForRetcode,
+  GACHA_API_HOSTS,
   isAllowedWishHost,
   parseWishAuth,
   WISH_FAILURE_COPY,
@@ -99,12 +101,35 @@ describe('parseWishAuth', () => {
 describe('buildGachaLogUrl', () => {
   const auth = parseWishAuth(wishUrl())!;
 
-  it('builds a page request on the same host', () => {
+  /**
+   * The pasted URL points at the webview page, not the API. Sending the
+   * request to the pasted host would 404 against a real link, which no
+   * amount of mocking the proxy would reveal.
+   */
+  it('re-points the request at the host that serves the log', () => {
     const url = new URL(buildGachaLogUrl({ auth, gachaType: '301' }));
-    expect(url.host).toBe('gs.hoyoverse.com');
-    expect(url.pathname).toBe('/event/gacha_info/api/getGachaLog');
+    expect(url.host).toBe('public-operation-hk4e-sg.hoyoverse.com');
+    expect(url.pathname).toBe('/gacha_info/api/getGachaLog');
     expect(url.searchParams.get('gacha_type')).toBe('301');
+    expect(url.searchParams.get('real_gacha_type')).toBe('301');
     expect(url.searchParams.get('authkey')).toBe(AUTHKEY);
+  });
+
+  it('uses the China host for a China account', () => {
+    const cn = parseWishAuth(
+      `https://gs.hoyoverse.com/x?authkey=${AUTHKEY}&game_biz=hk4e_cn&region=cn_gf01`,
+    )!;
+    expect(new URL(buildGachaLogUrl({ auth: cn, gachaType: '301' })).host).toBe(
+      'public-operation-hk4e.mihoyo.com',
+    );
+  });
+
+  it('keeps the API host on the allowlist the proxy enforces', () => {
+    // The proxy validates the pasted host; this asserts the host we build is
+    // one it would also accept, so the two can never disagree.
+    for (const host of Object.values(GACHA_API_HOSTS)) {
+      expect(isAllowedWishHost(host), host).toBe(true);
+    }
   });
 
   it('starts at the beginning and then follows the cursor', () => {
@@ -158,5 +183,31 @@ describe('failureForRetcode', () => {
       expect(copy.length, failure).toBeGreaterThan(20);
       expect(copy.endsWith('.'), failure).toBe(true);
     }
+  });
+});
+
+describe('buildWishUrlFromAuthkey', () => {
+  /**
+   * A minted key has to survive the same parsing a pasted link does, or the
+   * HoYoLAB path quietly becomes a second implementation of the import.
+   */
+  it('round-trips through the parser a pasted link uses', () => {
+    const url = buildWishUrlFromAuthkey({ authkey: AUTHKEY, region: 'os_usa' });
+    const auth = parseWishAuth(url)!;
+
+    expect(auth).not.toBeNull();
+    expect(auth.authkey).toBe(AUTHKEY);
+    expect(auth.region).toBe('os_usa');
+    expect(auth.gameBiz).toBe('hk4e_global');
+    expect(new URL(buildGachaLogUrl({ auth, gachaType: '301' })).host).toBe(
+      GACHA_API_HOSTS.overseas,
+    );
+  });
+
+  it('picks the China game_biz and host from a China region', () => {
+    const auth = parseWishAuth(buildWishUrlFromAuthkey({ authkey: AUTHKEY, region: 'cn_gf01' }))!;
+
+    expect(auth.gameBiz).toBe('hk4e_cn');
+    expect(new URL(buildGachaLogUrl({ auth, gachaType: '301' })).host).toBe(GACHA_API_HOSTS.china);
   });
 });

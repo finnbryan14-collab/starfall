@@ -2,8 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import { loadOrCreateActivePlan, savePlan } from '@/db/plans';
-import { knownWishIds, saveWishes, wishSummary } from '@/db/wishes';
+import { wishSummary } from '@/db/wishes';
 import type { HistorySummary } from '@/engine/wish/history';
 import { WISH_FAILURE_COPY, type WishApiFailure } from '@/lib/wish-api';
 import {
@@ -15,7 +14,8 @@ import {
   saveCacheHandle,
   type CacheReadFailure,
 } from '@/lib/wish-cache-fs';
-import { importWishes, type ImportProgress } from '@/lib/wish-import';
+import type { ImportProgress } from '@/lib/wish-import';
+import { syncWishes } from '@/lib/wish-sync';
 import { formatNumber } from '@/lib/format';
 
 import styles from './WishImport.module.css';
@@ -57,46 +57,21 @@ export function WishImport() {
     };
   }, []);
 
-  /**
-   * Writes the derived pity and guarantee onto the active plan.
-   *
-   * Creates one if there is none: importing wishes before ever opening the
-   * Plan screen is a perfectly normal order to do things in, and silently
-   * discarding the result would be the worst possible answer.
-   */
-  const applyToPlan = useCallback(async (next: HistorySummary) => {
-    const plan = await loadOrCreateActivePlan();
-    await savePlan({ ...plan, pity: next.pity, guaranteed: next.guaranteed });
+  const runImport = useCallback(async (link: string) => {
+    setStatus({ kind: 'importing', progress: null });
+
+    const result = await syncWishes(link, {
+      onProgress: (progress) => setStatus({ kind: 'importing', progress }),
+    });
+    setSummary(result.summary);
+
+    if (result.reason) {
+      setStatus({ kind: 'failed', message: WISH_FAILURE_COPY[result.reason as WishApiFailure] });
+      return;
+    }
+
+    setStatus({ kind: 'done', added: result.added, summary: result.summary });
   }, []);
-
-  const runImport = useCallback(
-    async (link: string) => {
-      setStatus({ kind: 'importing', progress: null });
-
-      // Only reads back to what is already stored, so a second import is quick.
-      const known = await knownWishIds();
-      const result = await importWishes(link, {
-        knownIds: known,
-        onProgress: (progress) => setStatus({ kind: 'importing', progress }),
-      });
-
-      if (result.wishes.length > 0) await saveWishes(result.wishes);
-      const next = await wishSummary();
-      setSummary(next);
-      await applyToPlan(next);
-
-      if (!result.ok) {
-        setStatus({
-          kind: 'failed',
-          message: WISH_FAILURE_COPY[result.reason as WishApiFailure],
-        });
-        return;
-      }
-
-      setStatus({ kind: 'done', added: result.wishes.length, summary: next });
-    },
-    [applyToPlan],
-  );
 
   const importFromFolder = useCallback(
     async (pickFirst: boolean) => {
