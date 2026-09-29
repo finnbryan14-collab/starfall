@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from 'next';
 import { Bodoni_Moda, Source_Sans_3 } from 'next/font/google';
 
+import { Shell } from '@/components/Shell';
+
 import './globals.css';
 
 /**
@@ -36,7 +38,9 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (
     <html lang="en" className={`${bodoniModa.variable} ${sourceSans3.variable}`}>
-      <body>{children}</body>
+      <body>
+        <Shell>{children}</Shell>
+      </body>
     </html>
   );
 }

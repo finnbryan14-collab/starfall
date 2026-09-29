@@ -1,0 +1,191 @@
+/*
+  Shared screen furniture, ported from design/preview.html so the two stay
+  comparable. Imported by each route's page. Tokens only.
+*/
+
+/* Two panes from 1024px: content left, inputs right (DESIGN.md). */
+.panel {
+  display: block;
+}
+
+@media (min-width: 1024px) {
+  .panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    gap: var(--s-8);
+    align-items: start;
+  }
+
+  .colSide {
+    padding-top: 76px;
+  }
+
+  .colSide > .sec:first-child {
+    margin-top: 0;
+  }
+}
+
+/* ---------- Answer block ---------- */
+.title {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: var(--t-2xl);
+  line-height: 1.15;
+  margin: var(--s-4) 0 0;
+}
+
+.answer {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: var(--t-hero);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  margin: var(--s-3) 0 0;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.answer .unit {
+  font-size: 0.42em;
+  color: var(--dim);
+  margin-left: 2px;
+  vertical-align: 0.95em;
+  letter-spacing: 0;
+}
+
+.lede {
+  color: var(--dim);
+  margin: var(--s-2) 0 0;
+  max-width: 36ch;
+}
+
+.lede strong {
+  color: var(--starlight);
+  font-weight: 600;
+}
+
+.verdictKeep {
+  color: var(--keep);
+}
+
+.verdictMaybe {
+  color: var(--maybe);
+}
+
+.verdictFeed {
+  color: var(--feed);
+}
+
+/* ---------- Constellation row ---------- */
+.cons {
+  list-style: none;
+  display: flex;
+  gap: var(--s-5);
+  padding: 0;
+  margin: var(--s-4) 0 0;
+}
+
+.cons li {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: var(--t-sm);
+  color: var(--dim);
+}
+
+.cons .star {
+  color: var(--gold);
+  font-size: var(--t-xs);
+}
+
+.cons b {
+  color: var(--starlight);
+  font-weight: 600;
+}
+
+.hint {
+  color: var(--dim);
+  font-size: var(--t-sm);
+  margin: var(--s-3) 0 0;
+}
+
+/* ---------- Ledger rows ---------- */
+.sec {
+  font-size: var(--t-lg);
+  font-weight: 600;
+  margin: var(--s-7) 0 var(--s-2);
+}
+
+.ledger {
+  border-top: 1px solid var(--rule);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: var(--s-3);
+  min-height: 60px;
+  padding: var(--s-2) 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.rowLabel {
+  font-size: var(--t-md);
+}
+
+.rowNote {
+  display: block;
+  font-size: var(--t-xs);
+  color: var(--faint);
+  line-height: 1.35;
+  margin-top: 2px;
+}
+
+.rowValue {
+  font-size: var(--t-lg);
+  text-align: right;
+}
+
+.rowValue small {
+  display: block;
+  font-size: var(--t-xs);
+  color: var(--faint);
+}
+
+.body {
+  color: var(--dim);
+  margin: var(--s-2) 0 0;
+  max-width: 40ch;
+}
+
+.notice {
+  font-size: var(--t-xs);
+  color: var(--faint);
+  margin-top: var(--s-7);
+  max-width: 46ch;
+}
+
+/*
+  Reserves the exact footprint of a chart that lands in a later phase, so the
+  surrounding layout can be compared against the preview now. Replaced by the
+  real component, not styled to look like one.
+*/
+.pending {
+  margin: var(--s-5) 0 0;
+  border: 1px dashed var(--rule);
+  border-radius: var(--r-input);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--faint);
+  font-size: var(--t-xs);
+  text-align: center;
+  padding: var(--s-3);
+}
+
+.caption {
+  font-size: var(--t-xs);
+  color: var(--faint);
+  margin-top: var(--s-2);
+}

@@ -1,0 +1,42 @@
+/* The reading column. Bottom padding clears the fixed tab bar. */
+.app {
+  max-width: var(--column);
+  margin: 0 auto;
+  padding: 0 var(--gutter) calc(96px + env(safe-area-inset-bottom));
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+}
+
+.wordmark {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: var(--t-lg);
+  letter-spacing: 0.01em;
+}
+
+.wordmark svg {
+  width: 16px;
+  height: 16px;
+}
+
+.sample {
+  font-size: var(--t-xs);
+  color: var(--faint);
+}
+
+/* From 1024px the rail takes over and the column gains a second pane. */
+@media (min-width: 1024px) {
+  .app {
+    max-width: 1120px;
+    padding: 0 var(--s-7) var(--s-8) 152px;
+  }
+}
