@@ -137,13 +137,22 @@ describe('featuredCdf', () => {
   });
 
   it('is non-decreasing and bounded by 1', () => {
+    // Scanned in a loop and asserted once per curve: an expect() per pull is
+    // tens of thousands of matcher calls across seven curves, which is slow
+    // enough to time out under a loaded suite.
     for (const copies of [1, 2, 3, 4, 5, 6, 7]) {
       const cdf = featuredCdf({ pity: 13, guaranteed: false, copies });
       expect(cdf[0]).toBe(0);
+
+      let firstDecrease = -1;
+      let firstOverOne = -1;
       for (let t = 1; t < cdf.length; t++) {
-        expect(cdf[t], `copies ${copies} pull ${t}`).toBeGreaterThanOrEqual(cdf[t - 1]);
-        expect(cdf[t]).toBeLessThanOrEqual(1 + 1e-9);
+        if (firstDecrease < 0 && cdf[t] < cdf[t - 1]) firstDecrease = t;
+        if (firstOverOne < 0 && cdf[t] > 1 + 1e-9) firstOverOne = t;
       }
+
+      expect(firstDecrease, `copies ${copies} went down at pull ${firstDecrease}`).toBe(-1);
+      expect(firstOverOne, `copies ${copies} exceeded 1 at pull ${firstOverOne}`).toBe(-1);
     }
   });
 

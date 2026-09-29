@@ -54,12 +54,25 @@ describe('mulberry32', () => {
   });
 
   it('stays in [0, 1)', () => {
+    // Range is checked in a tight loop and asserted once. Calling expect()
+    // 200,000 times costs seconds of matcher overhead, which made this test
+    // time out under a loaded parallel suite while passing on its own — a
+    // flake created entirely by how it was written.
     const rng = mulberry32(2026);
+    let min = Infinity;
+    let max = -Infinity;
+    let outOfRange = 0;
+
     for (let i = 0; i < 100_000; i++) {
       const value = rng();
-      expect(value).toBeGreaterThanOrEqual(0);
-      expect(value).toBeLessThan(1);
+      if (value < min) min = value;
+      if (value > max) max = value;
+      if (!(value >= 0 && value < 1)) outOfRange++;
     }
+
+    expect(outOfRange, `values outside [0, 1): min ${min}, max ${max}`).toBe(0);
+    expect(min).toBeGreaterThanOrEqual(0);
+    expect(max).toBeLessThan(1);
   });
 
   it('is roughly uniform', () => {

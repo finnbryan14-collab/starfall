@@ -67,11 +67,14 @@ describe('single-pass DP correctness', () => {
     // against 1 - 2e-15. featured.test.ts asserts the strict ordering at a pull
     // count where the curves are genuinely apart.
     for (let k = 1; k < 7; k++) {
+      let firstEasier = -1;
       for (let t = 0; t < all[k].length; t++) {
-        expect(all[k][t], `copies ${k + 1} at pull ${t}`).toBeLessThanOrEqual(
-          all[k - 1][t] + 1e-12,
-        );
+        if (all[k][t] > all[k - 1][t] + 1e-12) {
+          firstEasier = t;
+          break;
+        }
       }
+      expect(firstEasier, `copies ${k + 1} was easier than ${k} at pull ${firstEasier}`).toBe(-1);
     }
   });
 });
