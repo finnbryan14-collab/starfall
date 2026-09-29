@@ -51,6 +51,7 @@ pnpm test:e2e     # Playwright, at 390x844 and 1280x800
 pnpm lint         # ESLint + Prettier check
 pnpm format       # Prettier write
 pnpm typecheck    # tsc --noEmit
+pnpm perf         # engine performance budget, run isolated
 pnpm build        # production build
 ```
 

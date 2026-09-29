@@ -113,91 +113,131 @@ export type FeaturedCdfOptions<S = unknown> = {
   model?: FiftyFiftyModel<S>;
 };
 
+export type FeaturedCdfsOptions<S = unknown> = Omit<FeaturedCdfOptions<S>, 'copies'> & {
+  /** Highest copy count to compute. Curves for 1..maxCopies are all returned. */
+  maxCopies?: number;
+};
+
 /**
- * Chance of holding `copies` of the featured character within t pulls.
+ * Curves for every copy count from 1 to `maxCopies`, in one pass.
  *
- * Returns a Float64Array indexed by pulls: `cdf[t]` is that chance, `cdf[0]` is
- * 0, and the curve is non-decreasing.
+ * `result[k - 1]` is the CDF for holding k copies. The Plan screen needs C0 up
+ * to the chosen constellation at once, and running the DP once per copy count
+ * repeats almost all of the work: the C6 case measured 99ms that way, twice
+ * SPEC's 50ms budget for an input change.
  *
- * Forward DP over (copies so far, model state, pity). That is at most
- * 7 x |states| x 90 cells per pull, which runs in a few milliseconds over the
- * full range — no worker needed.
+ * Forward DP over (copies so far, model state, pity), double-buffered into two
+ * flat Float64Arrays that are zeroed and reused. The previous version allocated
+ * a fresh nested array of typed arrays on every pull — 14 allocations per pull
+ * over 1,260 pulls — and that churn, not the arithmetic, was the cost.
  */
-export function featuredCdf<S>(options: FeaturedCdfOptions<S> = {}): Float64Array {
+export function featuredCdfs<S>(options: FeaturedCdfsOptions<S> = {}): Float64Array[] {
   const {
     pity = 0,
     guaranteed = false,
-    copies = 1,
+    maxCopies = 1,
     model = consolidated55 as unknown as FiftyFiftyModel<S>,
-    maxPulls = exhaustionBound(pity, copies, guaranteed),
+    maxPulls = exhaustionBound(pity, maxCopies, guaranteed),
   } = options;
 
   if (!Number.isInteger(pity) || pity < 0 || pity >= HARD_PITY) {
     throw new RangeError(`pity must be an integer in [0, ${HARD_PITY - 1}], got ${pity}`);
   }
-  if (!Number.isInteger(copies) || copies < 1 || copies > MAX_COPIES) {
-    throw new RangeError(`copies must be an integer in [1, ${MAX_COPIES}], got ${copies}`);
+  if (!Number.isInteger(maxCopies) || maxCopies < 1 || maxCopies > MAX_COPIES) {
+    throw new RangeError(`maxCopies must be an integer in [1, ${MAX_COPIES}], got ${maxCopies}`);
   }
   if (!Number.isInteger(maxPulls) || maxPulls < 0) {
     throw new RangeError(`maxPulls must be a non-negative integer, got ${maxPulls}`);
   }
 
   const stateCount = model.states.length;
+  const levels = maxCopies + 1; // copies held so far: 0..maxCopies
+  const size = levels * stateCount * HARD_PITY;
 
-  // mass[copiesSoFar][stateIndex][pity]
-  const emptyLayer = () =>
-    Array.from({ length: copies }, () =>
-      Array.from({ length: stateCount }, () => new Float64Array(HARD_PITY)),
-    );
+  // Flat index for (copies so far, state, pity).
+  const at = (got: number, s: number, q: number) => (got * stateCount + s) * HARD_PITY + q;
 
-  let current = emptyLayer();
-  current[0][model.indexOf(model.initial(guaranteed))][pity] = 1;
+  let current = new Float64Array(size);
+  let next = new Float64Array(size);
 
-  const cdf = new Float64Array(maxPulls + 1);
-  let reached = 0;
+  current[at(0, model.indexOf(model.initial(guaranteed)), pity)] = 1;
+
+  // Per-state transition tables, resolved once rather than per cell.
+  const featuredChance = model.states.map((state) => model.featuredChance(state));
+  const onFeatured = model.states.map((state) => model.indexOf(model.next(state, 'featured')));
+  const onLost = model.states.map((state) => model.indexOf(model.next(state, 'lost')));
+
+  // Rate curve is fixed, so hoist it out of the inner loop.
+  const rate = new Float64Array(HARD_PITY);
+  for (let q = 0; q < HARD_PITY; q++) rate[q] = p5Char(q + 1);
+
+  const cdfs = Array.from({ length: maxCopies }, () => new Float64Array(maxPulls + 1));
+  const reached = new Float64Array(maxCopies + 1);
 
   for (let t = 1; t <= maxPulls; t++) {
-    const nextLayer = emptyLayer();
+    next.fill(0);
 
-    for (let got = 0; got < copies; got++) {
+    for (let got = 0; got < maxCopies; got++) {
       for (let s = 0; s < stateCount; s++) {
-        const row = current[got][s];
-        const state = model.states[s];
-        const featuredChance = model.featuredChance(state);
-        const onFeatured = model.indexOf(model.next(state, 'featured'));
-        const onLost = model.indexOf(model.next(state, 'lost'));
+        const chance = featuredChance[s];
+        const featuredState = onFeatured[s];
+        const lostState = onLost[s];
+        const base = at(got, s, 0);
 
         for (let q = 0; q < HARD_PITY; q++) {
-          const mass = row[q];
+          const mass = current[base + q];
           if (mass === 0) continue;
 
-          const fiveStar = p5Char(q + 1);
+          const fiveStar = rate[q];
 
           // No 5-star: pity advances by one.
-          if (fiveStar < 1) nextLayer[got][s][q + 1] += mass * (1 - fiveStar);
+          if (fiveStar < 1) next[at(got, s, q + 1)] += mass * (1 - fiveStar);
 
           const hit = mass * fiveStar;
           if (hit === 0) continue;
 
-          // Featured: one more copy, pity resets.
-          const featured = hit * featuredChance;
+          // Featured: one more copy, pity resets. Mass keeps flowing so the
+          // higher copy counts are filled in by the same pass.
+          const featured = hit * chance;
           if (featured > 0) {
-            if (got + 1 >= copies) reached += featured;
-            else nextLayer[got + 1][onFeatured][0] += featured;
+            reached[got + 1] += featured;
+            next[at(got + 1, featuredState, 0)] += featured;
           }
 
           // Lost: no copy, pity resets, the model decides the new state.
-          const lost = hit * (1 - featuredChance);
-          if (lost > 0) nextLayer[got][onLost][0] += lost;
+          const lost = hit * (1 - chance);
+          if (lost > 0) next[at(got, lostState, 0)] += lost;
         }
       }
     }
 
-    current = nextLayer;
-    cdf[t] = reached;
+    const swap = current;
+    current = next;
+    next = swap;
+
+    for (let k = 1; k <= maxCopies; k++) cdfs[k - 1][t] = reached[k];
   }
 
-  return cdf;
+  return cdfs;
+}
+
+/**
+ * Chance of holding `copies` of the featured character within t pulls.
+ *
+ * Returns a Float64Array indexed by pulls: `cdf[t]` is that chance, `cdf[0]` is
+ * 0, and the curve is non-decreasing.
+ *
+ * Callers that need several copy counts should use `featuredCdfs`, which
+ * computes them all in a single pass.
+ */
+export function featuredCdf<S>(options: FeaturedCdfOptions<S> = {}): Float64Array {
+  const { copies = 1, ...rest } = options;
+
+  if (!Number.isInteger(copies) || copies < 1 || copies > MAX_COPIES) {
+    throw new RangeError(`copies must be an integer in [1, ${MAX_COPIES}], got ${copies}`);
+  }
+
+  return featuredCdfs({ ...rest, maxCopies: copies })[copies - 1];
 }
 
 /**
