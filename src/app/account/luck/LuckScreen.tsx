@@ -10,6 +10,7 @@ import type { HistorySummary } from '@/engine/wish/history';
 import { expectedFiveStars, luckierThan } from '@/engine/wish/luck';
 import { EXPECTED_PULLS_PER_5STAR, HARD_PITY } from '@/engine/wish/pity';
 import { formatNumber } from '@/lib/format';
+import { readOr } from '@/lib/storage';
 
 import styles from './LuckScreen.module.css';
 
@@ -36,7 +37,7 @@ export function LuckScreen() {
 
   useEffect(() => {
     let cancelled = false;
-    void wishSummary().then((result) => {
+    void readOr(wishSummary, null).then((result) => {
       if (cancelled) return;
       setSummary(result);
       setLoaded(true);

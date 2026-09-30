@@ -53,6 +53,10 @@ Work top to bottom. Each task is small enough for one Claude Code session. Check
   - [x] When each reminder should fire (`src/engine/timers/reminders.ts`), tested.
   - [x] `push` and `notificationclick` handlers in the service worker.
   - [x] `pnpm vapid` generates the key pair; `.env.example` says where each half goes.
-  - [ ] **Blocked on a decision.** Scheduled push needs server-held state — a subscription and its due time have to outlive the browser session — and Starfall has no backend by design. Vercel KV, Upstash or a small Postgres would all do; the data is a few rows. Once that is picked: the subscribe UI, the `/api/push` routes and the cron that sends.
+  - [ ] **Blocked on two decisions, and the second is the bigger one.**
+    1. _Where subscriptions live._ Scheduled push needs server-held state — a subscription and its due time have to outlive the browser session — and Starfall has no backend by design. Upstash, Vercel KV or a small Postgres would each do; it is a few rows.
+    2. _What "at the computed time" can mean._ Vercel **Hobby allows one cron run per day**, with ±59 minutes of precision, and a more frequent expression fails at deployment ([docs](https://vercel.com/docs/cron-jobs/usage-and-pricing)). So a free deploy can send a **daily digest** — "resin full at 21:40, transformer ready Thursday" — but not a buzz at the moment resin caps. That needs Vercel Pro, or an outside scheduler such as the GitHub Actions the repo already uses for the weekly data refresh.
+
+    Once both are settled: the subscribe UI, the `/api/push` routes and the sender. The engine, the service-worker handlers and the key generation are done.
 - [ ] Deploy to Vercel. Lighthouse: performance ≥ 90, accessibility ≥ 95 on mobile. **Measured locally against a production build with `pnpm lighthouse`: performance 91–94, accessibility 100, best practices 100, SEO 100 on all four screens. The deploy itself needs Finn's Vercel account.**
 - [ ] Share with friends; collect the three most-wanted features from `docs/BACKLOG.md`.

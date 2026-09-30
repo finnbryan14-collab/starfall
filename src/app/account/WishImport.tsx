@@ -18,6 +18,7 @@ import {
 import type { ImportProgress } from '@/lib/wish-import';
 import { useHydrated } from '@/lib/use-hydrated';
 import { syncWishes } from '@/lib/wish-sync';
+import { readOr } from '@/lib/storage';
 import { formatNumber } from '@/lib/format';
 
 import styles from './WishImport.module.css';
@@ -54,10 +55,10 @@ export function WishImport() {
 
   useEffect(() => {
     let cancelled = false;
-    void wishSummary().then((result) => {
-      if (!cancelled && result.totalPulls > 0) setSummary(result);
+    void readOr(wishSummary, null).then((result) => {
+      if (!cancelled && result && result.totalPulls > 0) setSummary(result);
     });
-    void loadCacheHandle().then((handle) => {
+    void readOr(loadCacheHandle, null).then((handle) => {
       if (!cancelled) setHasFolder(handle !== null);
     });
     return () => {

@@ -9,6 +9,7 @@ import {
   utcOffsetForUid,
   type GameServer,
 } from '@/engine/account/server';
+import { readOr } from './storage';
 
 /**
  * Which clock this device should plan in.
@@ -46,7 +47,10 @@ export function useAccountServer(): AccountServer {
     null when there is no profile, which is how `loaded` is told apart from
     "loaded, and empty".
   */
-  const row = useLiveQuery(async () => (await db.settings.get(PROFILE_KEY)) ?? null, []);
+  const row = useLiveQuery(
+    () => readOr(async () => (await db.settings.get(PROFILE_KEY)) ?? null, null),
+    [],
+  );
 
   const loaded = row !== undefined;
   const uid = (row?.value as { uid?: string } | undefined)?.uid ?? null;

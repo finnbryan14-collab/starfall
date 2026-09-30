@@ -43,6 +43,20 @@
 }
 
 /*
+ * Shown only when the browser is refusing to store anything. Loud enough to be
+ * read, quiet enough not to look like an error the player caused.
+ */
+.blocked {
+  margin: 0 0 var(--s-4);
+  padding: var(--s-3);
+  border: 1px solid var(--gold);
+  border-radius: var(--r-input);
+  color: var(--starlight);
+  font-size: var(--t-sm);
+  max-width: 60ch;
+}
+
+/*
  * Required on every page, not only Account: a fan project has to say so
  * wherever a visitor lands. Sits above the tab bar's clearance.
  */

@@ -17,6 +17,7 @@ import {
 } from '@/lib/hoyolab';
 import { WISH_FAILURE_COPY, type WishApiFailure } from '@/lib/wish-api';
 import { syncWishes } from '@/lib/wish-sync';
+import { readOr } from '@/lib/storage';
 
 /**
  * The HoYoLAB opt-in.
@@ -60,7 +61,7 @@ export function useHoyolab(uid: string | null): HoyolabState {
 
   useEffect(() => {
     let cancelled = false;
-    db.settings.get(COOKIE_KEY).then((row) => {
+    void readOr(() => db.settings.get(COOKIE_KEY), undefined).then((row) => {
       if (cancelled) return;
       setCookie((row?.value as string | undefined) ?? null);
       setLoaded(true);

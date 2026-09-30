@@ -13,6 +13,7 @@ import {
   type ImportedArtifact,
 } from '@/lib/good';
 import { formatNumber } from '@/lib/format';
+import { readOr } from '@/lib/storage';
 
 import styles from './HoyolabPanel.module.css';
 
@@ -50,7 +51,7 @@ export function GoodImport() {
 
   useEffect(() => {
     let cancelled = false;
-    void artifactCount().then((count) => {
+    void readOr(artifactCount, 0).then((count) => {
       if (!cancelled) setStored(count);
     });
     return () => {

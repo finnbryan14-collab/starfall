@@ -1,5 +1,6 @@
 import { Nav } from '@/components/Nav';
 import { Starfield } from '@/components/Starfield';
+import { StorageNotice } from '@/components/StorageNotice';
 
 import styles from './Shell.module.css';
 
@@ -25,6 +26,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
           </span>
           <span className={styles.sample}>Preview with sample data</span>
         </header>
+
+        <StorageNotice />
 
         <main className={styles.main}>{children}</main>
 

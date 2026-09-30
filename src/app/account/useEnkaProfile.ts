@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { db } from '@/db/schema';
+import { readOr } from '@/lib/storage';
 import {
   describeAge,
   isValidUid,
@@ -42,7 +43,7 @@ export function useEnkaProfile() {
 
   useEffect(() => {
     let cancelled = false;
-    db.settings.get(PROFILE_KEY).then((row) => {
+    void readOr(() => db.settings.get(PROFILE_KEY), undefined).then((row) => {
       if (cancelled) return;
       setProfile((row?.value as CachedProfile | undefined) ?? null);
       setLoaded(true);

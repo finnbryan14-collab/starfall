@@ -9,6 +9,7 @@ import { defaultTargetDate } from '@/engine/calendar/banners';
 import { currentBalance, type CurrentBalance } from '@/engine/ledger';
 import { AMERICA_UTC_OFFSET } from '@/engine/time';
 import type { Wish } from '@/engine/wish/history';
+import { readOr } from '@/lib/storage';
 import { computePlan, type PlanResult } from '@/engine/wish/plan';
 
 /**
@@ -78,14 +79,17 @@ export function usePlan(now: Date = new Date(), utcOffset: number = AMERICA_UTC_
   // too high for a frame, and the hero numeral would visibly drop.
   useEffect(() => {
     let cancelled = false;
-    Promise.all([loadOrCreateActivePlan(firstRunPlan()), listWishes()]).then(
-      ([loaded, storedWishes]) => {
-        if (cancelled) return;
-        setPlan(loaded);
-        setWishes(storedWishes);
-        setReady(true);
-      },
-    );
+    // On a device that will not store anything the provisional plan is what
+    // the player gets: every number still computes, nothing is remembered.
+    void readOr(() => Promise.all([loadOrCreateActivePlan(firstRunPlan()), listWishes()]), [
+      null,
+      [],
+    ] as [Plan | null, Wish[]]).then(([loaded, storedWishes]) => {
+      if (cancelled) return;
+      if (loaded) setPlan(loaded);
+      setWishes(storedWishes);
+      setReady(true);
+    });
     return () => {
       cancelled = true;
     };

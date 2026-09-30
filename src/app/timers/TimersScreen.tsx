@@ -17,6 +17,7 @@ import {
 } from '@/engine/timers/model';
 import { formatNumber } from '@/lib/format';
 import { useAccountServer } from '@/lib/use-account-server';
+import { readOr } from '@/lib/storage';
 import { duration, useAnimeScope, useReducedMotion } from '@/motion';
 
 import styles from './TimersScreen.module.css';
@@ -66,7 +67,10 @@ export function TimersScreen() {
 
   useEffect(() => {
     let cancelled = false;
-    listTimers().then((loaded) => {
+    // An empty list, not a hang: without storage the screen is still a resin
+    // calculator, and a device that cannot save should say so rather than
+    // render nothing at all.
+    void readOr(listTimers, []).then((loaded) => {
       if (!cancelled) setRows(loaded);
     });
     return () => {
