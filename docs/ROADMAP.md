@@ -58,5 +58,10 @@ Work top to bottom. Each task is small enough for one Claude Code session. Check
     2. _What "at the computed time" can mean._ Vercel **Hobby allows one cron run per day**, with ±59 minutes of precision, and a more frequent expression fails at deployment ([docs](https://vercel.com/docs/cron-jobs/usage-and-pricing)). So a free deploy can send a **daily digest** — "resin full at 21:40, transformer ready Thursday" — but not a buzz at the moment resin caps. That needs Vercel Pro, or an outside scheduler such as the GitHub Actions the repo already uses for the weekly data refresh.
 
     Once both are settled: the subscribe UI, the `/api/push` routes and the sender. The engine, the service-worker handlers and the key generation are done.
-- [ ] Deploy to Vercel. Lighthouse: performance ≥ 90, accessibility ≥ 95 on mobile. **Measured locally against a production build with `pnpm lighthouse`: performance 91–94, accessibility 100, best practices 100, SEO 100 on all four screens. The deploy itself needs Finn's Vercel account.**
+- [x] Deploy to Vercel. Lighthouse: performance ≥ 90, accessibility ≥ 95 on mobile. **Live at https://starfall-two.vercel.app (2026-09-30). Measured against the deployed origin, not localhost: performance 95–98, accessibility 100, best practices 100, SEO 100 across all four screens.**
+
+  Verified in production: the Enka proxy returns live data through `STARFALL_CONTACT`, the service worker registers on every route, `/dev/*` 404s, no screen scrolls sideways at 390px, and the manifest, icons and share card all serve. Installs to an iPhone home screen and runs full-screen.
+
+  Deployed from the CLI rather than a Git repository, so every deploy is `pnpm dlx vercel --prod` by hand and the weekly data-refresh Action is dormant. See "Connecting a repository" in the README.
+
 - [ ] Share with friends; collect the three most-wanted features from `docs/BACKLOG.md`. Open Graph card, licence and README are in place, so a pasted link unfurls properly.

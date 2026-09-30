@@ -38,7 +38,7 @@ Genshin exposes wish history only through a temporary URL the game generates whe
 4. Merge by `id` into IndexedDB so repeated imports extend history past the game's six-month window.
 5. Drop the authkey from memory when the import finishes. Never log it or store it.
 
-**Banner type codes:** 301 character event (400 is the second character banner and shares pity with 301), 302 weapon, 200 standard, 100 beginner, 500 chronicled. Verify 400 and 500 with a real import.
+**Banner type codes:** 301 character event (400 is the second character banner and shares pity with 301), 302 weapon, 200 standard, 100 beginner, 500 chronicled. **400 and 500 are still unverified against a real import** — no synthetic fixture can confirm them, and the live account available so far has not run one.
 
 **Which fate each spends:** 301, 400, 302 and 500 take **Intertwined Fate** and so draw on a wish plan's budget; 100 and 200 take **Acquaint Fate** and do not. Sources on `INTERTWINED_BANNERS` in `src/engine/wish/history.ts`.
 

@@ -34,31 +34,52 @@ pnpm dev
 
 ## Deploying
 
-Starfall is a Next.js app with a handful of route handlers. It deploys to Vercel
-with no configuration, but **set `STARFALL_CONTACT` first**.
+Live at **https://starfall-two.vercel.app**.
 
-1. Push the repository to GitHub.
-2. Import it at [vercel.com/new](https://vercel.com/new). The framework, build
-   command and package manager are all detected.
-3. Add one environment variable:
+Deploys currently run from a laptop rather than from a repository:
 
+```bash
+pnpm dlx vercel --prod
+```
+
+`vercel.json` pins the framework to `nextjs`. That is not decoration — a
+project created with the wrong preset builds perfectly, reports success, and
+then serves the `public/` folder as a static site while every route 404s.
+Settings in `vercel.json` take precedence over the dashboard, so it cannot
+happen again.
+
+One environment variable is required, set on the Vercel project:
+
+```
+STARFALL_CONTACT = a URL or email you can be reached at
+```
+
+Enka.Network asks every client to identify itself in the `User-Agent` so they
+can get in touch about your traffic. Without it Starfall sends
+`contact-not-set`, which is honest and useless to them.
+
+Notifications are not wired up — `docs/ROADMAP.md` records the constraint that
+decides their shape (Vercel's Hobby plan allows one cron run per day).
+
+### Connecting a repository
+
+Two things are dormant without one: deploys are manual, and the weekly Action
+that regenerates the character map and banner calendar never runs.
+
+1. Create an empty repository on GitHub — no README, `.gitignore` or licence,
+   since this repo already has all three and they would conflict.
+2. Point this checkout at it and push:
+
+   ```bash
+   git remote add origin https://github.com/YOU/starfall.git
+   git push -u origin master
    ```
-   STARFALL_CONTACT = https://github.com/you/starfall
-   ```
 
-   Enka.Network asks every client to identify itself in the `User-Agent` so they
-   can get in touch about your traffic. Without this, Starfall sends
-   `contact-not-set`, which is honest and useless to them.
+3. In the Vercel project, **Settings → Git → Connect Git Repository**.
 
-4. Deploy.
-
-Notifications are not wired up yet — see `docs/ROADMAP.md`, which records the
-constraint that decides the shape of them (Vercel's Hobby plan allows one cron
-run per day).
-
-Once the repository is on GitHub, a weekly Action regenerates the character map
-and banner calendar and **opens a pull request** rather than pushing. The banner
-calendar sets every plan's default target date, so that diff is worth a glance.
+From then on every push deploys itself, and the Action opens a pull request each
+Monday rather than pushing. The banner calendar sets every plan's default target
+date, so that diff is worth a glance before merging.
 
 ## What leaves your device
 
