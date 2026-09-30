@@ -33,8 +33,10 @@ export function countDailyResets(from: Date, to: Date, utcOffset = AMERICA_UTC_O
 
   const hour = resetHourUtc(utcOffset);
 
-  // The first reset instant strictly after `from`.
-  const first = Date.UTC(
+  // The first reset instant strictly after `from`. The hour is negative on any
+  // server ahead of UTC, which puts the candidate on an earlier UTC day, so it
+  // is stepped forward by whole days rather than by one — see nextDailyReset.
+  const candidate = Date.UTC(
     from.getUTCFullYear(),
     from.getUTCMonth(),
     from.getUTCDate(),
@@ -43,7 +45,8 @@ export function countDailyResets(from: Date, to: Date, utcOffset = AMERICA_UTC_O
     0,
     0,
   );
-  const firstAfter = first > from.getTime() ? first : first + MS_PER_DAY;
+  const steps = Math.max(0, Math.floor((from.getTime() - candidate) / MS_PER_DAY) + 1);
+  const firstAfter = candidate + steps * MS_PER_DAY;
 
   if (firstAfter > to.getTime()) return 0;
   return Math.floor((to.getTime() - firstAfter) / MS_PER_DAY) + 1;

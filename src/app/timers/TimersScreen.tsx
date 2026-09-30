@@ -16,6 +16,7 @@ import {
   TRANSFORMER_COOLDOWN_HOURS,
 } from '@/engine/timers/model';
 import { formatNumber } from '@/lib/format';
+import { useAccountServer } from '@/lib/use-account-server';
 import { duration, useAnimeScope, useReducedMotion } from '@/motion';
 
 import styles from './TimersScreen.module.css';
@@ -56,6 +57,9 @@ function useNow(): Date {
 
 export function TimersScreen() {
   const now = useNow();
+  // Resin and realm currency accrue at a fixed rate wherever you are; only the
+  // resets are on server time.
+  const { utcOffset } = useAccountServer();
   const [rows, setRows] = useState<TimerRecord[] | null>(null);
   const ringRoot = useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
@@ -239,13 +243,14 @@ export function TimersScreen() {
             ready={realm?.full}
           />
 
+          {/* Reset is 4:00 *server* time; which server comes from the UID. */}
           <TimerRow
             name="Daily reset"
-            state={`In ${formatDuration(+nextDailyReset(now) - +now)}`}
+            state={`In ${formatDuration(+nextDailyReset(now, utcOffset) - +now)}`}
           />
           <TimerRow
             name="Weekly reset"
-            state={`Monday, in ${formatDuration(+nextWeeklyReset(now) - +now)}`}
+            state={`Monday, in ${formatDuration(+nextWeeklyReset(now, utcOffset) - +now)}`}
           />
         </div>
 

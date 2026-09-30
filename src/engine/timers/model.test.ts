@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { MS_PER_HOUR, MS_PER_MINUTE, nextDailyReset, nextWeeklyReset } from '@/engine/time';
+import {
+  DAILY_RESET_HOUR,
+  MS_PER_DAY,
+  MS_PER_HOUR,
+  MS_PER_MINUTE,
+  nextDailyReset,
+  nextWeeklyReset,
+} from '@/engine/time';
 import {
   EXPEDITION_DURATIONS_HOURS,
   RESIN_CAP,
@@ -226,5 +233,74 @@ describe('resets on the America server', () => {
     expect(nextDailyReset(new Date('2026-09-29T12:00:00Z'), 8).toISOString()).toBe(
       '2026-09-29T20:00:00.000Z',
     );
+  });
+});
+
+/**
+ * Servers ahead of UTC reset at a *negative* UTC hour: Asia's 4:00 is 20:00 the
+ * previous UTC day. That is the case the one-example test above happens to
+ * miss, and it was broken — from 20:00 UTC onwards the "next" reset landed in
+ * the past and the Timers screen read "In 0 min" for the rest of the day.
+ *
+ * Swept across the whole day rather than sampled, because which hour you ask at
+ * is precisely what decides whether the bug shows.
+ */
+describe('resets on every server, at every hour', () => {
+  const OFFSETS = [-5, 1, 8];
+
+  const from = (hour: number) => new Date(Date.UTC(2026, 8, 29, hour, 30, 0));
+
+  it('is always strictly in the future', () => {
+    const wrong: string[] = [];
+
+    for (const offset of OFFSETS) {
+      for (let hour = 0; hour < 24; hour++) {
+        const at = from(hour);
+        const reset = nextDailyReset(at, offset);
+        if (reset.getTime() <= at.getTime()) {
+          wrong.push(`offset ${offset} at ${hour}:30Z gave ${reset.toISOString()}`);
+        }
+      }
+    }
+
+    expect(wrong).toEqual([]);
+  });
+
+  it('is always 4:00 on the server clock, and never more than a day out', () => {
+    const wrongHour: string[] = [];
+    const tooFar: string[] = [];
+
+    for (const offset of OFFSETS) {
+      for (let hour = 0; hour < 24; hour++) {
+        const at = from(hour);
+        const reset = nextDailyReset(at, offset);
+        const serverLocal = new Date(reset.getTime() + offset * MS_PER_HOUR);
+
+        if (serverLocal.getUTCHours() !== DAILY_RESET_HOUR) {
+          wrongHour.push(`offset ${offset} at ${hour}:30Z`);
+        }
+        if (reset.getTime() - at.getTime() > MS_PER_DAY) {
+          tooFar.push(`offset ${offset} at ${hour}:30Z`);
+        }
+      }
+    }
+
+    expect(wrongHour).toEqual([]);
+    expect(tooFar).toEqual([]);
+  });
+
+  it('gives Asia the evening after, not the one just gone', () => {
+    // 22:56 UTC is past Asia's 20:00 reset for that day.
+    expect(nextDailyReset(new Date('2026-09-29T22:56:00Z'), 8).toISOString()).toBe(
+      '2026-09-30T20:00:00.000Z',
+    );
+  });
+
+  it('still lands on a Monday for a server ahead of UTC', () => {
+    const at = new Date('2026-09-29T22:56:00Z');
+    const weekly = nextWeeklyReset(at, 8);
+
+    expect(weekly.getTime()).toBeGreaterThan(at.getTime());
+    expect(new Date(weekly.getTime() + 8 * MS_PER_HOUR).getUTCDay()).toBe(1);
   });
 });

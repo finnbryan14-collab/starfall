@@ -11,7 +11,6 @@ import {
   notesUrl,
   parseDiary,
   parseNotes,
-  recogniseServer,
 } from './hoyolab';
 
 /** A realistic paste: the cookies we want, buried in ones we do not. */
@@ -66,28 +65,6 @@ describe('capability checks', () => {
         .join('; ');
       expect(canMintAuthkey(partial), `without ${missing}`).toBe(false);
     }
-  });
-});
-
-describe('recogniseServer', () => {
-  it('reads the server from the digits before the last eight', () => {
-    expect(recogniseServer('600000000')).toBe('os_usa');
-    expect(recogniseServer('700000000')).toBe('os_euro');
-    expect(recogniseServer('800000000')).toBe('os_asia');
-    expect(recogniseServer('900000000')).toBe('os_cht');
-  });
-
-  it('tells a 10-digit Asia UID from a CN one', () => {
-    // 18xxxxxxxx is Asia; a leading 1 on nine digits is a CN server. Reading
-    // only the first character would send every new account to the wrong host.
-    expect(recogniseServer('1800000000')).toBe('os_asia');
-    expect(recogniseServer('100000000')).toBe('cn_gf01');
-  });
-
-  it('is null for a UID it does not recognise', () => {
-    expect(recogniseServer('400000000')).toBeNull();
-    expect(recogniseServer('12345678')).toBeNull();
-    expect(recogniseServer('')).toBeNull();
   });
 });
 

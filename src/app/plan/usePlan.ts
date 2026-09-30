@@ -7,6 +7,7 @@ import type { Plan } from '@/db/schema';
 import { listWishes } from '@/db/wishes';
 import { defaultTargetDate } from '@/engine/calendar/banners';
 import { currentBalance, type CurrentBalance } from '@/engine/ledger';
+import { AMERICA_UTC_OFFSET } from '@/engine/time';
 import type { Wish } from '@/engine/wish/history';
 import { computePlan, type PlanResult } from '@/engine/wish/plan';
 
@@ -37,6 +38,11 @@ const SAVE_DEBOUNCE_MS = 400;
  *
  * It is never written to storage — `loadOrCreateActivePlan` still decides what
  * a first run persists.
+ *
+ * Its default target date is the banner's end at America's reset. On another
+ * server the real end is up to thirteen hours earlier, which can move the
+ * projection by a single daily reset — immaterial against a plan spanning
+ * weeks, and the player can change the date.
  */
 const PROVISIONAL_PLAN: Plan = makePlan(firstRunPlan());
 
@@ -62,7 +68,7 @@ export type UsePlan = {
   update: (patch: Partial<Plan>) => void;
 };
 
-export function usePlan(now: Date = new Date()): UsePlan {
+export function usePlan(now: Date = new Date(), utcOffset: number = AMERICA_UTC_OFFSET): UsePlan {
   const [plan, setPlan] = useState<Plan | null>(null);
   const [wishes, setWishes] = useState<Wish[]>([]);
   const [ready, setReady] = useState(false);
@@ -131,9 +137,10 @@ export function usePlan(now: Date = new Date()): UsePlan {
       assumptions: effectivePlan.assumptions,
       enabled: effectivePlan.enabled,
       endgameCompletion: effectivePlan.endgameCompletion,
+      utcOffset,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [effectivePlan, wishes, nowMs]);
+  }, [effectivePlan, wishes, nowMs, utcOffset]);
 
   const result = useMemo(() => {
     /*
@@ -157,10 +164,11 @@ export function usePlan(now: Date = new Date()): UsePlan {
       welkinDaysRemaining: effectivePlan.welkinDaysRemaining,
       endgameCompletion: effectivePlan.endgameCompletion,
       incomeOverride: effectivePlan.incomeOverride,
+      utcOffset,
     });
     // `now` itself is intentionally not a dependency; `nowMs` stands in for it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [effectivePlan, balance, nowMs, ready]);
+  }, [effectivePlan, balance, nowMs, ready, utcOffset]);
 
   return { plan: effectivePlan, ready, result, balance, update };
 }

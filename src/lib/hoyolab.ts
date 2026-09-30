@@ -87,30 +87,14 @@ export function canMintAuthkey(cookie: string): boolean {
 }
 
 /**
- * The server a UID belongs to, from its leading digits.
+ * Which server a UID is on.
  *
- * The prefix is everything before the last eight digits, so a 9-digit UID
- * gives one character and a 10-digit one gives two — which is how `18`
- * (Asia) stays distinct from `1` (a CN server).
+ * Re-exported from the engine rather than defined here: the same mapping also
+ * decides which clock every reset, banner window and wish timestamp is read
+ * against (src/engine/account/server.ts), and two copies of it would be two
+ * chances to disagree.
  */
-const SERVER_RANGES: Record<string, readonly string[]> = {
-  cn_gf01: ['1', '2', '3'],
-  cn_qd01: ['5'],
-  os_usa: ['6'],
-  os_euro: ['7'],
-  os_asia: ['8', '18'],
-  os_cht: ['9'],
-};
-
-export function recogniseServer(uid: string): string | null {
-  const prefix = uid.slice(0, -8);
-  if (!prefix) return null;
-
-  for (const [server, prefixes] of Object.entries(SERVER_RANGES)) {
-    if (prefixes.includes(prefix)) return server;
-  }
-  return null;
-}
+export { serverFromUid as recogniseServer } from '@/engine/account/server';
 
 export type HoyolabAction = 'notes' | 'diary' | 'authkey';
 

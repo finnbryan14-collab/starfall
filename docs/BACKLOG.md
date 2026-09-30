@@ -29,7 +29,3 @@ Ideas from planning, not scheduled. Pull into ROADMAP.md when v1 ships.
 - Optional sync (accounts) once more than a few friends use it.
 - Home-screen widget for resin (needs a native wrapper, e.g. Capacitor).
 - Experimental Capturing Radiance loss-counter model toggle.
-
-## Correctness, known gaps
-
-- **Non-America servers.** Everything assumes the America server: reset at 04:00 UTC-5, and gacha-log timestamps read at that offset. Europe is UTC+1 and Asia/TW are UTC+8 (`genshin.py` records all three). The server is already derivable from the UID — `recogniseServer` in `src/lib/hoyolab.ts` — so the fix is to thread an offset through `src/engine/time.ts` and everything that defaults to `AMERICA_UTC_OFFSET`, rather than to gather new data. Until then a Europe player's daily reset countdown is six hours out and their pull timestamps are six hours early.

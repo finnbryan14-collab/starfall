@@ -217,9 +217,26 @@ Newer crafting paths (Sanctifying Elixir via the Artifact Transmuter, which guar
 | Parametric Transformer | Usable again 166 hours after use, which is 6 days 22 hours. The gadget description rounds to 7 days, so assuming 7 makes a player wait two hours too long every week |
 | Expeditions            | 4, 8, 12, or 20 hours, per slot                                                                                                                                      |
 | Realm currency         | User enters current amount, cap, and hourly rate from their teapot                                                                                                   |
-| Daily reset            | 04:00 server time (America server: UTC−5)                                                                                                                            |
+| Daily reset            | 04:00 server time. Weekly reset is Monday at the same instant                                                                                                        |
 
 Timers compute from a stored `setAt` timestamp and the rule, never from a ticking counter, so they stay correct when the app is closed.
+
+### Which clock
+
+Genshin runs three, and everything dated — daily and weekly resets, the Abyss on the 16th, the Theater and stardust shop on the 1st, banner windows, the timestamps on imported wishes — is on **server** time, not the player's.
+
+| Server         | Offset | Reset, in UTC        |
+| -------------- | ------ | -------------------- |
+| America        | UTC−5  | 09:00                |
+| Europe         | UTC+1  | 03:00                |
+| Asia, TW/HK/MO | UTC+8  | 20:00 the day before |
+
+- source: https://game8.co/games/Genshin-Impact/archives/301599
+- verifiedAt: 2026-09-29
+
+The server is read off the UID (`src/engine/account/server.ts`), so nobody is asked for it. Before an account is imported there is nothing to go on, so America is assumed and the Account screen says so.
+
+**Watch the sign.** A server ahead of UTC resets at a _negative_ UTC hour, which puts the instant on the previous UTC day. Building a candidate from today's UTC date and adding one day if it is not late enough — the obvious implementation — leaves the "next" reset in the past for Asian accounts from 20:00 UTC onwards, and over-counts a projection's days by one. Step forward by however many whole days it takes instead. Tested across all 24 hours for every offset, because which hour you ask at is exactly what decides whether it shows.
 
 ---
 
@@ -233,6 +250,7 @@ Timers compute from a stored `setAt` timestamp and the rule, never from a tickin
 - Domain drop rates and 4-line chances: https://news.bittopup.com/news/genshin-impact-loot-scaling-guide-ar45-drop-rates
 - Sanctifying Elixir 5.5 change: https://www.sportskeeda.com/esports/genshin-impact-5-5-introduce-new-artifacts-qol-feature
 - Banner calendar (7.1): https://game8.co/games/Genshin-Impact/archives/305012
+- Server reset times and offsets: https://game8.co/games/Genshin-Impact/archives/301599 and https://www.rpgsite.net/feature/10336-genshin-impact-daily-reset-time-when-the-server-reset-is-in-your-region
 - Intertwined Fate price and use: https://genshin-impact.fandom.com/wiki/Intertwined_Fate
 - Acquaint Fate is for Standard and Beginners' Wish: https://genshin-impact.fandom.com/wiki/Acquaint_Fate
 - Chronicled Wish takes Intertwined Fate: https://game8.co/games/Genshin-Impact/archives/446618

@@ -84,6 +84,29 @@ describe('countDailyResets', () => {
   it('handles the reset hour landing in UTC correctly', () => {
     expect(RESET_UTC_HOUR).toBe(9);
   });
+
+  /**
+   * A server ahead of UTC resets at a negative UTC hour — Asia's 4:00 is 20:00
+   * the previous UTC day — so the first candidate can be a whole day behind
+   * `from`. Stepping it forward by a single day was not always enough, and the
+   * resulting reset sat *before* the window, inflating the count by one and
+   * with it every Asian player's projected income.
+   */
+  it('counts the same number of days on every server', () => {
+    const from = utc('2026-09-01T22:56:00Z');
+    const to = new Date(from.getTime() + 10 * 86_400_000);
+
+    for (const offset of [-5, 1, 8]) {
+      // An exactly ten-day window contains exactly ten of any daily instant.
+      expect(countDailyResets(from, to, offset), `offset ${offset}`).toBe(10);
+    }
+  });
+
+  it('does not count a reset that has already gone on an Asian account', () => {
+    // 22:56Z is past Asia's 20:00Z reset; the only one in the window is the
+    // following evening's.
+    expect(countDailyResets(utc('2026-09-29T22:56:00Z'), utc('2026-09-30T21:00:00Z'), 8)).toBe(1);
+  });
 });
 
 describe('countMonthlyResets', () => {

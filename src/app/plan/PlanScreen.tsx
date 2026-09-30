@@ -7,6 +7,7 @@ import screen from '@/components/screen.module.css';
 import { AnswerBlock, SegmentedControl, StepperRow } from '@/components/ui';
 import { MAX_COPIES } from '@/engine/wish/featured';
 import { formatNumber, formatPercent } from '@/lib/format';
+import { useAccountServer } from '@/lib/use-account-server';
 
 import { IncomeSheet } from './IncomeSheet';
 import { usePlan } from './usePlan';
@@ -31,7 +32,10 @@ export function PlanScreen() {
   // One clock reading per mount, so the projection does not shift under the
   // animation while the player is reading it.
   const now = useMemo(() => new Date(), []);
-  const { plan, ready, result, balance, update } = usePlan(now);
+  // Every reset in the projection is on server time, which comes from the
+  // imported UID (src/lib/use-account-server.ts).
+  const { utcOffset } = useAccountServer();
+  const { plan, ready, result, balance, update } = usePlan(now, utcOffset);
   const [sheetOpen, setSheetOpen] = useState(false);
   // The chart drives the numeral, so the redraw and the count are one moment.
   const numeralRef = useRef<HTMLSpanElement>(null);

@@ -11,6 +11,7 @@ import {
   nextPhase,
 } from '@/engine/calendar/banners';
 import { ENKA_FAILURE_COPY, hasShowcase } from '@/lib/enka';
+import { useAccountServer } from '@/lib/use-account-server';
 import { useMountedNow } from '@/lib/use-now';
 
 import styles from './AccountScreen.module.css';
@@ -86,8 +87,12 @@ export function AccountScreen() {
    * useMountedNow — so the prerendered HTML cannot carry the build clock.
    */
   const now = useMountedNow();
+  const account = useAccountServer();
   const dataAgeDays = now === null ? null : bannerDataAgeDays(now);
-  const calendarRunOut = now !== null && currentPhase(now) === null && nextPhase(now) === null;
+  const calendarRunOut =
+    now !== null &&
+    currentPhase(now, account.utcOffset) === null &&
+    nextPhase(now, account.utcOffset) === null;
 
   // The UID the button would submit. Refreshing the one already loaded is
   // blocked during Enka's TTL, but typing a different UID is always allowed —
@@ -238,6 +243,28 @@ export function AccountScreen() {
         <HoyolabPanel uid={profile?.uid ?? null} />
 
         <BackupPanel />
+
+        <h2 className={screen.sec}>Server</h2>
+        <p className={screen.body}>
+          {/*
+            Every reset, banner window and wish timestamp is on server time,
+            and Genshin runs three clocks. Said out loud because the answer is
+            a guess until a UID is imported, and a wrong clock is invisible
+            until a countdown is six hours out.
+          */}
+          {account.assumed ? (
+            <>
+              Assuming the <strong>{account.name}</strong> server, since no UID has been imported.
+              Resets and banner dates use its 4:00 clock. Import a UID above and Starfall works it
+              out.
+            </>
+          ) : (
+            <>
+              Reading <strong>{account.name}</strong> from your UID. Resets and banner dates use its
+              4:00 clock.
+            </>
+          )}
+        </p>
 
         <h2 className={screen.sec}>Game data</h2>
         <p className={screen.body}>

@@ -29,10 +29,19 @@ export function resetHourUtc(utcOffset = AMERICA_UTC_OFFSET): number {
   return DAILY_RESET_HOUR - utcOffset;
 }
 
-/** The first daily reset strictly after `from`. */
+/**
+ * The first daily reset strictly after `from`.
+ *
+ * The candidate is built from `from`'s UTC date at the reset's UTC hour, which
+ * for a server ahead of UTC is *negative* — Asia's 4:00 is 20:00 the previous
+ * UTC day. So the candidate can start a whole day behind, and stepping forward
+ * by one day is not always enough to clear `from`. Stepping by however many
+ * whole days it takes is the same answer for every server and does not care
+ * which side of midnight the offset puts the hour on.
+ */
 export function nextDailyReset(from: Date, utcOffset = AMERICA_UTC_OFFSET): Date {
   const hour = resetHourUtc(utcOffset);
-  const today = Date.UTC(
+  const candidate = Date.UTC(
     from.getUTCFullYear(),
     from.getUTCMonth(),
     from.getUTCDate(),
@@ -41,7 +50,9 @@ export function nextDailyReset(from: Date, utcOffset = AMERICA_UTC_OFFSET): Date
     0,
     0,
   );
-  return new Date(today > from.getTime() ? today : today + MS_PER_DAY);
+
+  const days = Math.max(0, Math.floor((from.getTime() - candidate) / MS_PER_DAY) + 1);
+  return new Date(candidate + days * MS_PER_DAY);
 }
 
 /**
