@@ -287,6 +287,61 @@ Transformative reactions, elevation, and anything conditional a talent or weapon
 
 ---
 
+## 7. Base stats at a level
+
+Every stat in the game grows the same way, and it is not a formula anyone has to guess at:
+
+    stat = base × curve[level] + ascensionBonus[phase]
+
+`base` is the level-1 value, `curve` is a shared table several characters point at (there are only four for characters and fourteen for weapons), and the ascension bonus is a step that changes when you ascend, not when you level. So a result is **exact**, not interpolated.
+
+Three things about it are easy to get wrong.
+
+**The ascension bonus is cumulative.** `ascension[6]` is the whole bonus at phase 6, not the gain from phase 5. Reading it the other way would be wrong by roughly a factor of six at level 90 while still looking plausible.
+
+**The phase cannot be derived from the level.** 20/20 and 20/40 are both real and differ by 1,038 HP on Hu Tao, which is why GOOD carries the level and the phase separately. Starfall honours the phase it is given wherever the level permits it, and corrects rather than rejects an impossible pair — this is third-party scanner data, and dropping a character out of the roster over an inconsistent phase would be a worse answer than showing them one phase out.
+
+**A weapon's second stat takes no ascension bonus at all.** It is pure curve, which is why Staff of Homa reads 25.4% CRIT DMG at both 20/20 and 20/40 while its base ATK jumps from 122 to 153.
+
+### Base crit
+
+Every character starts at **5% CRIT Rate and 50% CRIT DMG**, before ascension or gear. Universal across all 124 characters in the game data, checked rather than assumed. It matters because the wiki's ascension tables print the ascension _gain_ — Hu Tao's column reads 38.4% at phase 6 — while her character screen reads 88.4%. Starfall reports the 88.4%, because that is the number the damage formula multiplies by.
+
+- source: https://genshin-impact.fandom.com/wiki/CRIT_Rate
+- verifiedAt: 2026-09-30
+
+### Percentages are fractions
+
+Inside `src/engine/stats/` and everything downstream, **0.884 means 88.4%**. The artifact model counts percentage _points_ instead (`SUBSTATS.cd.max` is 7.77, meaning 7.77%) because that is how the game prints a substat. `fromArtifactValue` is the only crossing between the two conventions, so it is the only place that can get it wrong — which is the point of having exactly one.
+
+### The test cases
+
+`src/engine/stats/scaling.test.ts` asserts the wiki's own published ascension tables, and `src/data/game-data.test.ts` runs the same figures through the generated data files:
+
+| Subject        | Level | Published                                               |
+| -------------- | ----- | ------------------------------------------------------- |
+| Hu Tao         | 90/90 | HP 15,552.31 · ATK 106.43 · DEF 876.15 · CRIT DMG 38.4% |
+| Hu Tao         | 20/20 | HP 3,140.60                                             |
+| Hu Tao         | 20/40 | HP 4,178.68                                             |
+| Bennett        | 90/90 | HP 12,397.40 · ATK 191.16 · DEF 771.25 · ER 26.68%      |
+| Staff of Homa  | 90/90 | ATK 608 · CRIT DMG 66.2%                                |
+| Staff of Homa  | 1/20  | ATK 46 · CRIT DMG 14.4%                                 |
+| Favonius Sword | 90/90 | ATK 454 · ER 61.3%                                      |
+
+Every one of them agrees with the game data to the two decimals the wiki prints. The one visible difference is Bennett's Energy Recharge: the wiki prints 26.68% where the game data says 0.2667, and the character screen shows 26.7% either way.
+
+- source: https://genshin-impact.fandom.com/wiki/Hu_Tao
+- source: https://genshin-impact.fandom.com/wiki/Bennett
+- source: https://genshin-impact.fandom.com/wiki/Staff_of_Homa
+- source: https://genshin-impact.fandom.com/wiki/Favonius_Sword
+- verifiedAt: 2026-09-30
+
+### The cap moved
+
+Characters now reach **level 100**: the wiki's tables print rows for 95/95 and 100/100, and the game's own curve table carries values for them. genshin-optimizer still caps at 90, so most scanner exports will too, but Starfall accepts and scales a higher level rather than rejecting the character. Weapons still stop at 90.
+
+---
+
 ## Sources
 
 - Pity and consolidated rates: https://news.bittopup.com/news/genshin-impact-pity-system-guide-90-pull-guarantee-50-50
@@ -298,6 +353,7 @@ Transformative reactions, elevation, and anything conditional a talent or weapon
 - Sanctifying Elixir 5.5 change: https://www.sportskeeda.com/esports/genshin-impact-5-5-introduce-new-artifacts-qol-feature
 - Banner calendar (7.1): https://game8.co/games/Genshin-Impact/archives/305012
 - Damage formula, with the worked example used as a test: https://genshin-impact.fandom.com/wiki/Damage
+- Base stat growth, ascension tables and base crit: https://genshin-impact.fandom.com/wiki/Hu_Tao, https://genshin-impact.fandom.com/wiki/Bennett, https://genshin-impact.fandom.com/wiki/Staff_of_Homa, https://genshin-impact.fandom.com/wiki/Favonius_Sword and https://genshin-impact.fandom.com/wiki/CRIT_Rate
 - Server reset times and offsets: https://game8.co/games/Genshin-Impact/archives/301599 and https://www.rpgsite.net/feature/10336-genshin-impact-daily-reset-time-when-the-server-reset-is-in-your-region
 - Intertwined Fate price and use: https://genshin-impact.fandom.com/wiki/Intertwined_Fate
 - Acquaint Fate is for Standard and Beginners' Wish: https://genshin-impact.fandom.com/wiki/Acquaint_Fate

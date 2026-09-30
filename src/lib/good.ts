@@ -90,9 +90,21 @@ const goodTalent = z.looseObject({
   burst: z.number().int().min(1).max(15).optional(),
 });
 
+/**
+ * The game raised the character cap past 90 — the wiki's ascension tables now
+ * print rows for 95 and 100, and genshin-db carries curve values for them.
+ * genshin-optimizer still caps at 90, so most scanners will too, but one that
+ * reads the game directly could report 95. Rejecting it would drop the whole
+ * character out of the roster over a level we can already scale correctly.
+ *
+ *   source: https://genshin-impact.fandom.com/wiki/Hu_Tao
+ *   verifiedAt: 2026-09-30
+ */
+const MAX_CHARACTER_LEVEL = 100;
+
 const goodCharacter = z.looseObject({
   key: z.string().min(1),
-  level: z.number().int().min(1).max(90).optional(),
+  level: z.number().int().min(1).max(MAX_CHARACTER_LEVEL).optional(),
   constellation: z.number().int().min(0).max(6).optional(),
   ascension: z.number().int().min(0).max(6).optional(),
   talent: goodTalent.optional(),
@@ -100,6 +112,7 @@ const goodCharacter = z.looseObject({
 
 const goodWeapon = z.looseObject({
   key: z.string().min(1),
+  /** Weapons still stop at 90 — only characters gained the higher levels. */
   level: z.number().int().min(1).max(90).optional(),
   ascension: z.number().int().min(0).max(6).optional(),
   refinement: z.number().int().min(1).max(5).optional(),

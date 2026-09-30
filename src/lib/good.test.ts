@@ -126,6 +126,23 @@ describe('parseGood', () => {
     if (result.ok) expect(result.source).toBe('an unnamed scanner');
   });
 
+  /**
+   * The cap moved. Zod rejects the whole file on one bad field, so a character
+   * past level 90 used to take the entire roster with it — four hundred good
+   * artifacts lost to one number the game now allows.
+   */
+  it('accepts a character past level 90, which the game now permits', () => {
+    const result = parseGood(good({ characters: [{ key: 'HuTao', level: 100, ascension: 6 }] }));
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.counts.characters).toBe(1);
+  });
+
+  it('still refuses a level no character can reach', () => {
+    const result = parseGood(good({ characters: [{ key: 'HuTao', level: 101 }] }));
+    expect(result).toEqual({ ok: false, reason: 'malformed' });
+  });
+
   it('has copy for every failure', () => {
     for (const [reason, copy] of Object.entries(GOOD_FAILURE_COPY)) {
       expect(copy.length, reason).toBeGreaterThan(20);

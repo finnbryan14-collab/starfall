@@ -50,11 +50,48 @@ Genshin exposes wish history only through a temporary URL the game generates whe
 
 ## 4. Static game data
 
-- **genshin-db** (npm `genshin-db`, updated for version 7.0) for characters, talents, constellations, weapons, materials, domains, and artifact sets. Import only the folders you need, or pre-build a trimmed JSON at build time with `scripts/build-static-data.ts`; the full package is large.
-- **Talent book and weapon material weekdays** come from genshin-db's domain data.
-- **Stat weights and income defaults** are ours, in `src/engine/`, with a source and date on each value.
+**genshin-db** (npm `genshin-db`) is the source. It is generated from the game's own ExcelBinOutput rather than scraped, so the stat tables are exact. It is a **devDependency and never ships**: 178 MB stays in `node_modules`, and `pnpm build:data` writes out only what Starfall uses.
 
-Regenerate static data each patch (roughly every six weeks). The script should fail loudly if a character in a user's Enka import is missing from the data.
+`scripts/build-game-data.mts` emits three things:
+
+| Output                             | What's in it                                            | Size       |
+| ---------------------------------- | ------------------------------------------------------- | ---------- |
+| `src/data/characters-generated.ts` | 129 characters: identity, base stats, curves, ascension | 100 KB     |
+| `src/data/weapons-generated.ts`    | 253 weapons: base ATK, second stat, curves, ascension   | 123 KB     |
+| `public/data/talents/<Key>.json`   | talent damage multipliers, one file per character       | ~3 KB each |
+
+Talents are **split per character rather than bundled**: all of them together are 407 KB, a screen only ever wants one character at a time, and the service worker caches each on first use.
+
+### Keys come from genshin-optimizer, not from us
+
+A character joins the rest of the app by its GOOD key — `HuTao`, `KamisatoAyaka` — because that is what a scanner export carries. Deriving one from a display name works for 118 of 124 characters, which is not good enough: each of the six exceptions would be a character silently missing from the roster. So the derived key is checked against genshin-optimizer's own published list and anything unmatched is reported by name.
+
+genshin-optimizer lags genshin-db by a patch or two, so a brand-new character legitimately will not be in the list. Those are kept under the derived key — which is the key a scanner will use once it catches up — and printed at the end of the run.
+
+### What the generator refuses to guess
+
+- **An unknown stat identifier** throws, naming itself. A new `FIGHT_PROP_*` must be mapped by hand rather than quietly becoming something plausible.
+- **A character with no element** in the game data is emitted as `null` and reported. Two 6.1 entries are in this state; an elemental DMG bonus applied to the wrong element would be a silently inflated number.
+- **A GOOD key collision** is reported and the later weapon skipped. Three quest weapons share the name "Prized Isshin Blade" across three rarities, and a name-derived key cannot tell them apart.
+- **A hole in a curve table** throws rather than producing NaN.
+
+### The self-check
+
+Before writing anything, the generator recomputes **every character and weapon at every level and phase** — 37,404 rows — and compares against genshin-db's own stat function. Any disagreement over 1e-6 fails the run naming the character, the level and the stat. It costs a second and it is the only thing standing between a transcription slip and a damage figure that is wrong everywhere.
+
+The stat tables were separately cross-checked against the wiki's published ascension tables; see docs/MATH.md section 7 for the figures and `src/data/game-data.test.ts`, which asserts them against the committed files.
+
+### Talent labels
+
+The game writes talent labels as free text, so which ones are _hits_ is a judgement. It is made at build time, in one place, so the result sits in a committed file where it can be read.
+
+Matching on the word "DMG" was the obvious rule and it was wrong twice over: it missed 61 real hits — "Aimed Shot", "Charged Attack", "DoT", "Riptide Slash" and "Life Drain" never say DMG, and for a bow character the aimed shot is most of the damage — and it let in sixteen "Shield DMG Absorption" labels, which are shield strength. So the template decides first (a hit is a pure multiplier, every term a percentage; a shield always carries a flat term), then the name rules out bonuses, costs and heals.
+
+Each hit keeps its terms and what joins them, because the join matters: `+` sums two scalings of one hit (Nahida's Tri-Karma is ATK + EM), while `/` separates alternatives (a low and a high plunge are different hits sharing a label).
+
+The scaling stat is read off the label — the game writes `{param6:P} DEF` when a talent scales off DEF — and defaults to ATK when the label says nothing, which is the overwhelming majority.
+
+Regenerate each patch (roughly every six weeks) with `pnpm build:data`, then `pnpm format`.
 
 ## 5. HoYoLAB, behind an explicit opt-in
 
