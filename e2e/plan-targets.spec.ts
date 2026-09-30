@@ -165,3 +165,30 @@ test.describe('Balance projection', () => {
     );
   });
 });
+
+/**
+ * What the server puts in the HTML, before any JavaScript runs.
+ *
+ * `/plan` is prerendered at build time and served for as long as the deploy
+ * lives. Anything computed from a clock is therefore the *build's* clock in the
+ * HTML and the visitor's on hydration — React throws the markup away and
+ * re-renders, which is React error #418.
+ *
+ * It cannot be caught by loading the page locally, because a local check runs
+ * moments after the build and the two clocks agree. It showed up only on a
+ * deployment that had been up a while. So the invariant is asserted directly:
+ * the prerendered HTML carries no projection at all.
+ */
+test.describe('Prerendered HTML', () => {
+  test('carries nothing computed from a clock', async ({ request, baseURL }) => {
+    const html = await (await request.get(new URL('/plan', baseURL).toString())).text();
+
+    // The balance line only exists once income has been projected over a real
+    // span, which cannot happen before the stored plan has loaded.
+    expect(html, 'the balance line must not be prerendered').not.toContain('Primogems from');
+
+    // And the screen still ships something to read rather than an empty panel.
+    expect(html).toContain('Your stash');
+    expect(html).toContain('aria-busy="true"');
+  });
+});

@@ -81,7 +81,16 @@ export function PlanScreen() {
     () =>
       projectBalanceCurve({
         from: now,
-        to: targetDate ?? now,
+        /*
+          Gated on `ready` for the same reason the projection is, and missed
+          the first time: `/plan` is prerendered, so a curve spanning to the
+          target date is computed from the *build* clock in the HTML and the
+          visitor's on hydration. The two disagree by however long the deploy
+          has been up, and React throws the markup away and re-renders — an
+          error that cannot show up locally, because a local check runs
+          moments after the build.
+        */
+        to: ready && targetDate ? targetDate : now,
         startingPrimogems: balance.primogems,
         assumptions: plan.assumptions,
         enabled: plan.enabled,
@@ -93,7 +102,7 @@ export function PlanScreen() {
     // Depends on the instant rather than the Date object, so a fresh one each
     // render does not redraw the line.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [now, targetMs, balance.primogems, plan, utcOffset],
+    [now, targetMs, balance.primogems, plan, utcOffset, ready],
   );
 
   /** Every 5★ the calendar has ever seen, for the target list. */
