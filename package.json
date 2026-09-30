@@ -17,7 +17,8 @@
     "build:e2e": "cross-env NEXT_PUBLIC_ENABLE_DEV_PAGES=1 next build",
     "build:data": "node --experimental-strip-types scripts/build-enka-map.mts && node --experimental-strip-types scripts/build-banners.mts",
     "build:banners": "node --experimental-strip-types scripts/build-banners.mts",
-    "lighthouse": "node --experimental-strip-types scripts/lighthouse.mts"
+    "lighthouse": "node --experimental-strip-types scripts/lighthouse.mts",
+    "vapid": "node --experimental-strip-types scripts/generate-vapid.mts"
   },
   "dependencies": {
     "animejs": "^4.5.0",

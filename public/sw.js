@@ -89,3 +89,69 @@ self.addEventListener('fetch', (event) => {
     );
   }
 });
+
+/*
+  Notifications.
+
+  The payload is JSON: { title, body, tag, url }. Everything is optional — the
+  push protocol allows a message with no body at all, and a worker that throws
+  on one shows the browser's own "This site has been updated in the background"
+  instead, which is worse than saying nothing useful ourselves.
+
+  `tag` collapses repeats: a second "resin is full" replaces the first rather
+  than stacking, because two of them say nothing the first did not.
+*/
+
+const DEFAULT_NOTIFICATION = {
+  title: 'Starfall',
+  body: 'Something you were waiting for is ready.',
+  url: '/timers',
+};
+
+self.addEventListener('push', (event) => {
+  let payload = {};
+  try {
+    payload = event.data ? event.data.json() : {};
+  } catch {
+    // A push that is not JSON is still a push worth showing.
+    payload = {};
+  }
+
+  const title = payload.title || DEFAULT_NOTIFICATION.title;
+  const url = payload.url || DEFAULT_NOTIFICATION.url;
+
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body: payload.body || DEFAULT_NOTIFICATION.body,
+      tag: payload.tag || 'starfall',
+      renotify: Boolean(payload.tag),
+      icon: '/icon/192',
+      badge: '/icon/192',
+      data: { url },
+    }),
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = (event.notification.data && event.notification.data.url) || DEFAULT_NOTIFICATION.url;
+
+  event.waitUntil(
+    (async () => {
+      // Focus a tab that is already open rather than opening a second one.
+      const clients = await self.clients.matchAll({
+        type: 'window',
+        includeUncontrolled: true,
+      });
+
+      for (const client of clients) {
+        if (new URL(client.url).origin !== self.location.origin) continue;
+        await client.focus();
+        if ('navigate' in client) await client.navigate(url);
+        return;
+      }
+
+      await self.clients.openWindow(url);
+    })(),
+  );
+});

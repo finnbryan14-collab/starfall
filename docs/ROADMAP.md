@@ -50,5 +50,9 @@ Work top to bottom. Each task is small enough for one Claude Code session. Check
 ## Phase 5: Notifications and ship
 
 - [ ] Web Push (VAPID) for "resin full" and "transformer ready": a small scheduled function that sends pushes at the computed times. iOS requires the app to be installed to the home screen. **Done when** a push arrives on Finn's phone.
+  - [x] When each reminder should fire (`src/engine/timers/reminders.ts`), tested.
+  - [x] `push` and `notificationclick` handlers in the service worker.
+  - [x] `pnpm vapid` generates the key pair; `.env.example` says where each half goes.
+  - [ ] **Blocked on a decision.** Scheduled push needs server-held state — a subscription and its due time have to outlive the browser session — and Starfall has no backend by design. Vercel KV, Upstash or a small Postgres would all do; the data is a few rows. Once that is picked: the subscribe UI, the `/api/push` routes and the cron that sends.
 - [ ] Deploy to Vercel. Lighthouse: performance ≥ 90, accessibility ≥ 95 on mobile. **Measured locally against a production build with `pnpm lighthouse`: performance 91–94, accessibility 100, best practices 100, SEO 100 on all four screens. The deploy itself needs Finn's Vercel account.**
 - [ ] Share with friends; collect the three most-wanted features from `docs/BACKLOG.md`.
