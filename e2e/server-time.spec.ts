@@ -57,6 +57,9 @@ async function importUid(page: Page, uid: string, server: string) {
  */
 async function dailyResetMinutes(page: Page): Promise<number> {
   await page.goto('/timers');
+  // The screen renders a busy panel until the stored timers arrive, so the row
+  // has to be waited for rather than read straight after the navigation.
+  await expect(page.getByText('Daily reset', { exact: true })).toBeVisible();
 
   const text =
     (await page

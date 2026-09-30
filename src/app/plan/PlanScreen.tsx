@@ -2,9 +2,13 @@
 
 import { useMemo, useRef, useState } from 'react';
 
+import { BalanceLine } from '@/components/BalanceLine';
 import { FateDial } from '@/components/FateDial';
 import screen from '@/components/screen.module.css';
-import { AnswerBlock, SegmentedControl, StepperRow } from '@/components/ui';
+import fieldStyles from '@/components/ui/FieldRow.module.css';
+import { AnswerBlock, FieldRow, SegmentedControl, StepperRow } from '@/components/ui';
+import { defaultTargetDate, findCharacter, scheduledCharacters } from '@/engine/calendar/banners';
+import { projectBalanceCurve } from '@/engine/income';
 import { MAX_COPIES } from '@/engine/wish/featured';
 import { formatNumber, formatPercent } from '@/lib/format';
 import { useAccountServer } from '@/lib/use-account-server';
@@ -28,6 +32,17 @@ function shortPercent(chance: number): string {
 
 const DATE_FORMAT = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' });
 
+/**
+ * What the plan switcher calls a plan.
+ *
+ * A constellation only belongs on a character — "Skirk C1" is how anyone would
+ * say it, while "Save for 7.2 C0" is not something a person would write down.
+ */
+function planName(target: string, constellation: number): string {
+  if (!target) return 'New plan';
+  return findCharacter(target) ? `${target} C${constellation}` : target;
+}
+
 export function PlanScreen() {
   // One clock reading per mount, so the projection does not shift under the
   // animation while the player is reading it.
@@ -35,7 +50,10 @@ export function PlanScreen() {
   // Every reset in the projection is on server time, which comes from the
   // imported UID (src/lib/use-account-server.ts).
   const { utcOffset } = useAccountServer();
-  const { plan, ready, result, balance, update } = usePlan(now, utcOffset);
+  const { plan, ready, result, balance, update, plans, switchTo, addPlan, removePlan } = usePlan(
+    now,
+    utcOffset,
+  );
   const [sheetOpen, setSheetOpen] = useState(false);
   // The chart drives the numeral, so the redraw and the count are one moment.
   const numeralRef = useRef<HTMLSpanElement>(null);
@@ -57,6 +75,59 @@ export function PlanScreen() {
   const datePassed = ready && targetDate !== null && targetDate.getTime() <= now.getTime();
 
   const confirmedLabel = DATE_FORMAT.format(new Date(plan.balanceConfirmedAt));
+
+  const targetMs = targetDate?.getTime() ?? null;
+  const balanceCurve = useMemo(
+    () =>
+      projectBalanceCurve({
+        from: now,
+        to: targetDate ?? now,
+        startingPrimogems: balance.primogems,
+        assumptions: plan.assumptions,
+        enabled: plan.enabled,
+        welkinDaysRemaining: plan.welkinDaysRemaining,
+        endgameCompletion: plan.endgameCompletion,
+        incomeOverride: plan.incomeOverride,
+        utcOffset,
+      }),
+    // Depends on the instant rather than the Date object, so a fresh one each
+    // render does not redraw the line.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [now, targetMs, balance.primogems, plan, utcOffset],
+  );
+
+  /** Every 5★ the calendar has ever seen, for the target list. */
+  const characters = useMemo(() => scheduledCharacters().sort((a, b) => a.localeCompare(b)), []);
+  const upcoming = useMemo(
+    () => (plan.target ? defaultTargetDate(plan.target, now, utcOffset) : null),
+    [plan.target, now, utcOffset],
+  );
+
+  /**
+   * Changing who you are pulling for moves the date to their banner.
+   *
+   * Always, rather than only when the date is untouched: the date is right
+   * there and editable, so a wrong-but-visible default is easy to correct,
+   * while silently keeping the previous character's date is not.
+   */
+  function retarget(target: string) {
+    const banner = defaultTargetDate(target, now, utcOffset);
+    update({
+      target,
+      name: planName(target, plan.constellation),
+      ...(banner ? { targetDate: banner.toISOString() } : {}),
+    });
+  }
+
+  /** A date input gives `YYYY-MM-DD`; the plan stores an instant. */
+  function setTargetDate(date: string) {
+    if (!date) {
+      update({ targetDate: '' });
+      return;
+    }
+    const [year, month, day] = date.split('-').map(Number);
+    update({ targetDate: new Date(Date.UTC(year, month - 1, day, 12)).toISOString() });
+  }
   // Nothing to explain until the derived balance differs from what was typed.
   const ledgerMoved = balance.earnedPrimogems > 0 || balance.pullsSince > 0;
 
@@ -96,6 +167,9 @@ export function PlanScreen() {
           numeralRef={numeralRef}
           target={plan.target || undefined}
         />
+
+        {/* SPEC section 1: the balance by date, as a small line under the dial. */}
+        <BalanceLine curve={balanceCurve} targetLabel={dateLabel} />
 
         <ul className={screen.cons} aria-label="Chance by constellation">
           {result.constellations.map((c) => (
@@ -140,6 +214,75 @@ export function PlanScreen() {
       </div>
 
       <div className={screen.colSide}>
+        <h2 className={screen.sec}>Who and when</h2>
+        <div className={screen.ledger}>
+          {/*
+            Shown once there is more than one, so a first run is not asked to
+            understand a concept it does not have yet.
+          */}
+          {plans.length > 1 ? (
+            <FieldRow label="Plan" htmlFor="plan-switcher" note={`${plans.length} saved`}>
+              <select
+                id="plan-switcher"
+                className={fieldStyles.input}
+                value={plan.id}
+                onChange={(event) => switchTo(event.target.value)}
+              >
+                {plans.map((saved) => (
+                  <option key={saved.id} value={saved.id}>
+                    {saved.name || 'Untitled plan'}
+                  </option>
+                ))}
+              </select>
+            </FieldRow>
+          ) : null}
+
+          <FieldRow
+            label="Target"
+            htmlFor="plan-target"
+            note="Any 5★, or whatever you're saving for"
+          >
+            <input
+              id="plan-target"
+              className={fieldStyles.input}
+              type="text"
+              autoComplete="off"
+              list="plan-characters"
+              placeholder="Who are you pulling for?"
+              value={plan.target}
+              onChange={(event) => retarget(event.target.value)}
+            />
+          </FieldRow>
+          {/*
+            A list rather than a select: the calendar knows every 5★ that has
+            ever been featured, but "save for 7.2" is a perfectly good target
+            too, so free text has to keep working.
+          */}
+          <datalist id="plan-characters">
+            {characters.map((character) => (
+              <option key={character} value={character} />
+            ))}
+          </datalist>
+
+          <FieldRow
+            label="By"
+            htmlFor="plan-date"
+            note={
+              upcoming
+                ? `Their banner ends ${DATE_FORMAT.format(upcoming)}`
+                : 'How long you have to save'
+            }
+          >
+            <input
+              id="plan-date"
+              className={fieldStyles.input}
+              type="date"
+              value={plan.targetDate ? plan.targetDate.slice(0, 10) : ''}
+              onChange={(event) => setTargetDate(event.target.value)}
+            />
+          </FieldRow>
+        </div>
+
         <h2 className={screen.sec}>Your stash</h2>
         <div className={screen.ledger}>
           <StepperRow
@@ -182,7 +325,14 @@ export function PlanScreen() {
             label="Constellation goal"
             note="How many copies you want"
             value={plan.constellation}
-            onChange={(constellation) => update({ constellation })}
+            onChange={(constellation) =>
+              update({
+                constellation,
+                // The switcher labels plans by name, and a name nobody typed
+                // is better than "New plan" three times over.
+                name: plan.target ? planName(plan.target, constellation) : plan.name,
+              })
+            }
             max={MAX_COPIES - 1}
             valueText={(v) => `C${v}`}
           />
@@ -229,6 +379,14 @@ export function PlanScreen() {
           <button type="button" className={screen.sheetButton} onClick={() => setSheetOpen(true)}>
             Income assumptions
           </button>
+          <button type="button" className={screen.sheetButton} onClick={addPlan}>
+            Save another plan
+          </button>
+          {plans.length > 1 ? (
+            <button type="button" className={screen.sheetButton} onClick={removePlan}>
+              Delete this plan
+            </button>
+          ) : null}
         </div>
 
         <IncomeSheet

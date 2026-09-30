@@ -127,4 +127,59 @@ test.describe('Timers screen', () => {
     await page.reload();
     await expect(page.getByText('143', { exact: true })).toBeVisible();
   });
+
+  /**
+   * SPEC.md section 4 lists expeditions among the timers. The engine had them
+   * from Phase 2; no screen ever showed one.
+   */
+  test('sends an expedition and counts it down', async ({ page }) => {
+    await page.goto('/timers');
+    await expect(page.getByText('Expedition 1')).toBeVisible();
+    await expect(page.getByText('Not sent').first()).toBeVisible();
+
+    await page.getByRole('button', { name: 'Send 20 h' }).click();
+
+    // 20 hours, less the moment it took to click.
+    await expect(page.getByText(/Back in 19 h 59 min|Back in 20 h 0 min/)).toBeVisible();
+  });
+
+  test('fills the next free slot rather than asking which', async ({ page }) => {
+    await page.goto('/timers');
+    await page.getByRole('button', { name: 'Send 4 h' }).click();
+    await page.getByRole('button', { name: 'Send 8 h' }).click();
+
+    await expect(page.getByRole('button', { name: 'Cancel 1' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Cancel 2' })).toBeVisible();
+    await expect(page.getByText('Not sent')).toHaveCount(3);
+  });
+
+  test('stops offering slots once all five are out', async ({ page }) => {
+    await page.goto('/timers');
+    for (let i = 0; i < 5; i++) {
+      await page.getByRole('button', { name: 'Send 4 h' }).click();
+    }
+
+    await expect(page.getByRole('button', { name: 'Send 4 h' })).toBeDisabled();
+    await expect(page.getByText(/All five are out/)).toBeVisible();
+  });
+
+  test('keeps counting while the app is closed', async ({ page }) => {
+    await page.goto('/timers');
+    await page.getByRole('button', { name: 'Send 8 h' }).click();
+    await expect(page.getByText(/Back in 7 h 59 min|Back in 8 h 0 min/)).toBeVisible();
+
+    // The row stores when it was sent, not a countdown, so a reload cannot
+    // restart it.
+    await page.reload();
+    await expect(page.getByText(/Back in 7 h 59 min|Back in 8 h 0 min/)).toBeVisible();
+  });
+
+  test('frees the slot when one is collected', async ({ page }) => {
+    await page.goto('/timers');
+    await page.getByRole('button', { name: 'Send 4 h' }).click();
+    await expect(page.getByText('Not sent')).toHaveCount(4);
+
+    await page.getByRole('button', { name: 'Cancel 1' }).click();
+    await expect(page.getByText('Not sent')).toHaveCount(5);
+  });
 });

@@ -204,6 +204,72 @@ export function projectIncome(input: ProjectIncomeInput): IncomeProjection {
   };
 }
 
+export type BalancePoint = {
+  /** Epoch ms. */
+  at: number;
+  /** Primogems held at that moment, starting balance included. */
+  primogems: number;
+};
+
+export type BalanceCurveInput = ProjectIncomeInput & {
+  /** What the player holds at `from`. */
+  startingPrimogems: number;
+  /** How many points to sample. More is smoother, not more accurate. */
+  points?: number;
+  /**
+   * The player's own income figure, replacing the projected total.
+   *
+   * Spread over the period in the projection's shape rather than evenly: the
+   * player is overriding *how much*, not *when* — income still arrives on
+   * resets, so a straight line would be a different claim than the one they
+   * made.
+   */
+  incomeOverride?: number | null;
+};
+
+/**
+ * The primogem balance over time, for the line under the dial.
+ *
+ * Sampled rather than accumulated: each point is a full `projectIncome` from
+ * `from` to that moment, so the curve is the same arithmetic the headline uses
+ * and cannot drift from it. Income arrives on resets, so the real shape is a
+ * staircase — the samples land wherever they land and the line reads as the
+ * trend it is.
+ */
+export function projectBalanceCurve(input: BalanceCurveInput): BalancePoint[] {
+  const { from, to, startingPrimogems, points = 32, incomeOverride } = input;
+  const span = to.getTime() - from.getTime();
+
+  if (span <= 0 || points < 2) {
+    return [{ at: from.getTime(), primogems: startingPrimogems }];
+  }
+
+  const projected = projectIncome(input).primogems;
+  // An override rescales the curve so it ends on the player's figure. Without
+  // this the line would contradict the income the screen says it is using.
+  const scale =
+    incomeOverride === null || incomeOverride === undefined || projected <= 0
+      ? 1
+      : incomeOverride / projected;
+
+  const curve: BalancePoint[] = [];
+  for (let i = 0; i < points; i++) {
+    const at = from.getTime() + (span * i) / (points - 1);
+    const earned = i === 0 ? 0 : projectIncome({ ...input, to: new Date(at) }).primogems * scale;
+    curve.push({ at, primogems: startingPrimogems + Math.floor(earned) });
+  }
+
+  // The last point is the answer the rest of the screen states, so it is set
+  // rather than sampled — a rounding difference there would read as a bug.
+  const total = incomeOverride ?? projected;
+  curve[curve.length - 1] = {
+    at: to.getTime(),
+    primogems: startingPrimogems + Math.floor(total),
+  };
+
+  return curve;
+}
+
 export type PullsAvailableInput = {
   primogems: number;
   fates: number;

@@ -1,0 +1,50 @@
+.row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: var(--s-3);
+  min-height: 60px;
+  padding: var(--s-2) 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.label {
+  font-size: var(--t-md);
+}
+
+.note {
+  display: block;
+  font-size: var(--t-xs);
+  color: var(--faint);
+  line-height: 1.35;
+  margin-top: 2px;
+}
+
+/* Shared by the text and date inputs a plan uses. */
+.input {
+  min-height: var(--tap);
+  min-width: 0;
+  max-width: 180px;
+  background: var(--well);
+  border: 1px solid transparent;
+  border-radius: var(--r-input);
+  padding: 0 12px;
+  color: inherit;
+  font: inherit;
+  text-align: right;
+}
+
+.input::placeholder {
+  color: var(--faint);
+}
+
+/*
+  Safari and Chrome render the date picker's own indicator dark on dark. The
+  filter is the only way to reach it, and it is cheaper than replacing a native
+  date picker that works well on a phone.
+*/
+.input[type='date']::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.6;
+  cursor: pointer;
+}

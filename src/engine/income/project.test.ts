@@ -11,6 +11,7 @@ import {
   DAILY_RESET_HOUR,
   countDailyResets,
   countMonthlyResets,
+  projectBalanceCurve,
   projectIncome,
   pullsAvailable,
 } from '@/engine/income/project';
@@ -352,5 +353,111 @@ describe('pullsAvailable', () => {
   it('rejects negative balances', () => {
     expect(() => pullsAvailable({ primogems: -1, fates: 0 })).toThrow();
     expect(() => pullsAvailable({ primogems: 0, fates: -1 })).toThrow();
+  });
+});
+
+describe('projectBalanceCurve', () => {
+  const base = {
+    assumptions: DEFAULT_ASSUMPTIONS,
+    enabled: { dailyCommissions: true },
+    startingPrimogems: 11_200,
+  };
+
+  it('starts at what the player holds and never goes down', () => {
+    const curve = projectBalanceCurve({
+      ...base,
+      from: utc('2026-09-29T12:00:00Z'),
+      to: utc('2026-11-03T12:00:00Z'),
+    });
+
+    expect(curve[0].primogems).toBe(11_200);
+    for (let i = 1; i < curve.length; i++) {
+      expect(curve[i].primogems, `point ${i}`).toBeGreaterThanOrEqual(curve[i - 1].primogems);
+      expect(curve[i].at, `point ${i}`).toBeGreaterThan(curve[i - 1].at);
+    }
+  });
+
+  /**
+   * The line and the headline have to agree. Sampling the same projectIncome
+   * rather than accumulating a separate running total is what guarantees it.
+   */
+  it('ends exactly where the projection says it will', () => {
+    const from = utc('2026-09-29T12:00:00Z');
+    const to = utc('2026-11-03T12:00:00Z');
+
+    const curve = projectBalanceCurve({ ...base, from, to });
+    const projected = projectIncome({ ...base, from, to }).primogems;
+
+    expect(curve[curve.length - 1].primogems).toBe(11_200 + Math.floor(projected));
+    expect(curve[curve.length - 1].at).toBe(to.getTime());
+  });
+
+  it('is a single point when there is no time to project over', () => {
+    const at = utc('2026-09-29T12:00:00Z');
+    expect(projectBalanceCurve({ ...base, from: at, to: at })).toEqual([
+      { at: at.getTime(), primogems: 11_200 },
+    ]);
+    // A target date in the past is the same case.
+    expect(
+      projectBalanceCurve({ ...base, from: at, to: utc('2026-09-01T12:00:00Z') }),
+    ).toHaveLength(1);
+  });
+
+  it('samples as many points as asked for', () => {
+    const curve = projectBalanceCurve({
+      ...base,
+      from: utc('2026-09-29T12:00:00Z'),
+      to: utc('2026-11-03T12:00:00Z'),
+      points: 8,
+    });
+    expect(curve).toHaveLength(8);
+  });
+});
+
+describe('projectBalanceCurve with a pinned income', () => {
+  const from = utc('2026-09-29T12:00:00Z');
+  const to = utc('2026-11-03T12:00:00Z');
+  const base = {
+    from,
+    to,
+    assumptions: DEFAULT_ASSUMPTIONS,
+    enabled: { dailyCommissions: true },
+    startingPrimogems: 11_200,
+  };
+
+  /**
+   * The screen shows one income figure. A line that ends somewhere else is
+   * the app contradicting itself in the same glance.
+   */
+  it('ends on the player’s figure, not the projection', () => {
+    const curve = projectBalanceCurve({ ...base, incomeOverride: 3_850 });
+    expect(curve[curve.length - 1].primogems).toBe(11_200 + 3_850);
+  });
+
+  it('keeps the projection’s shape rather than going straight', () => {
+    const curve = projectBalanceCurve({ ...base, incomeOverride: 3_850, points: 5 });
+
+    // Still monotonic, still starting where the player is.
+    expect(curve[0].primogems).toBe(11_200);
+    for (let i = 1; i < curve.length; i++) {
+      expect(curve[i].primogems).toBeGreaterThanOrEqual(curve[i - 1].primogems);
+    }
+    // And the middle is a fraction of the way, not half of a straight line.
+    expect(curve[2].primogems).toBeGreaterThan(11_200);
+    expect(curve[2].primogems).toBeLessThan(11_200 + 3_850);
+  });
+
+  it('falls back to the projection when nothing is pinned', () => {
+    const projected = projectIncome(base).primogems;
+    const curve = projectBalanceCurve({ ...base, incomeOverride: null });
+
+    expect(curve[curve.length - 1].primogems).toBe(11_200 + Math.floor(projected));
+  });
+
+  it('copes with a pinned figure when the projection is zero', () => {
+    const none = { ...base, enabled: {} };
+    const curve = projectBalanceCurve({ ...none, incomeOverride: 500 });
+
+    expect(curve[curve.length - 1].primogems).toBe(11_200 + 500);
   });
 });

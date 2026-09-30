@@ -3,6 +3,7 @@ import { expect, test } from '@playwright/test';
 import {
   backdateBalance,
   enterPreviewExample,
+  planReady,
   readAnswer,
   readStepper,
   setStepper,
@@ -19,7 +20,9 @@ import {
 test.describe('Plan screen', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/plan');
-    await expect(page.getByRole('spinbutton', { name: 'Primogems' })).toBeVisible();
+    // `goto` resolves before React has the stored plan on screen; reading a
+    // stepper any earlier gets the provisional zero.
+    await planReady(page);
   });
 
   /** ROADMAP Phase 1: assert 72.9% for C0 on the preview's example. */
@@ -61,8 +64,7 @@ test.describe('Plan screen', () => {
     await enterPreviewExample(page);
     await expect.poll(() => readAnswer(page)).toBe('72.9');
 
-    // The write is debounced by 400ms; give it room before reloading.
-    await page.waitForTimeout(900);
+    await waitForPlanSave(page);
     await page.reload();
 
     await expect(page.getByRole('spinbutton', { name: 'Primogems' })).toHaveValue('11,200');
@@ -80,7 +82,7 @@ test.describe('Plan screen', () => {
     const guaranteed = Number(await readAnswer(page));
     expect(guaranteed).toBeGreaterThan(72.9);
 
-    await page.waitForTimeout(900);
+    await waitForPlanSave(page);
     await page.reload();
     await expect(page.getByRole('radio', { name: 'Guaranteed' })).toBeChecked();
   });
@@ -148,7 +150,7 @@ test.describe('Plan screen', () => {
 
     await backdateBalance(page, 10);
     await page.reload();
-    await expect(page.getByRole('spinbutton', { name: 'Primogems' })).toBeVisible();
+    await planReady(page);
 
     const carried = await readStepper(page, 'Primogems');
     expect(carried, 'ten days of income should have been added').toBeGreaterThan(confirmed);
@@ -171,7 +173,7 @@ test.describe('Plan screen', () => {
 
     await waitForPlanSave(page);
     await page.reload();
-    await expect(page.getByRole('spinbutton', { name: 'Primogems' })).toBeVisible();
+    await planReady(page);
     // Reloading must not re-apply the ten days that were already counted.
     expect(await readStepper(page, 'Primogems')).toBe(5_000);
   });

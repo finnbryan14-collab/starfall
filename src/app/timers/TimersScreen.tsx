@@ -5,10 +5,19 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import screen from '@/components/screen.module.css';
 import { StepperRow, TimerRow } from '@/components/ui';
-import { listTimers, setTimer, TIMER_IDS } from '@/db/timers';
+import {
+  clearTimer,
+  EXPEDITION_SLOTS,
+  expeditionId,
+  listTimers,
+  setTimer,
+  TIMER_IDS,
+} from '@/db/timers';
 import type { TimerRow as TimerRecord } from '@/db/schema';
 import { nextDailyReset, nextWeeklyReset } from '@/engine/time';
 import {
+  EXPEDITION_DURATIONS_HOURS,
+  expeditionAt,
   RESIN_CAP,
   realmCurrencyAt,
   resinAt,
@@ -88,6 +97,29 @@ export function TimersScreen() {
     const row = await setTimer(id, value, config);
     setRows((previous) => [...(previous ?? []).filter((r) => r.id !== id), row]);
   };
+
+  const forget = async (id: string) => {
+    await clearTimer(id);
+    setRows((previous) => (previous ?? []).filter((r) => r.id !== id));
+  };
+
+  /**
+   * The five expedition slots, in order, whether or not they are running.
+   *
+   * An empty slot has no stored row, so "idle" is the absence of one rather
+   * than a value meaning idle.
+   */
+  const expeditions = Array.from({ length: EXPEDITION_SLOTS }, (_, index) => {
+    const row = byId.get(expeditionId(index));
+    const hours = row?.config?.hours;
+    const state =
+      row && hours
+        ? expeditionAt({ startedAt: row.setAt, hours: hours as 4 | 8 | 12 | 20 }, now)
+        : null;
+    return { slot: index, state };
+  });
+
+  const nextFreeSlot = expeditions.find((e) => e.state === null)?.slot ?? null;
 
   const resinRow = byId.get(TIMER_IDS.resin);
   const resin = resinAt(
@@ -247,6 +279,27 @@ export function TimersScreen() {
             ready={realm?.full}
           />
 
+          {/*
+            One row per slot, because a player wants to know when the *next*
+            one is back, not an aggregate. A finished expedition stays on the
+            list saying so until it is collected — the game does the same.
+          */}
+          {expeditions.map(({ slot, state }) => (
+            <TimerRow
+              key={slot}
+              name={`Expedition ${slot + 1}`}
+              state={
+                state === null
+                  ? 'Not sent'
+                  : state.done
+                    ? 'Back — collect it'
+                    : `Back in ${formatDuration(state.untilDoneMs)}`
+              }
+              fraction={state ? state.progress : null}
+              ready={state?.done}
+            />
+          ))}
+
           {/* Reset is 4:00 *server* time; which server comes from the UID. */}
           <TimerRow
             name="Daily reset"
@@ -257,6 +310,51 @@ export function TimersScreen() {
             state={`Monday, in ${formatDuration(+nextWeeklyReset(now, utcOffset) - +now)}`}
           />
         </div>
+
+        <h2 className={screen.sec}>Expeditions</h2>
+        <div className={styles.action}>
+          {/*
+            Sending goes to the next free slot rather than asking which one —
+            the slots are interchangeable and picking between five identical
+            things is a decision nobody wants to make.
+          */}
+          {EXPEDITION_DURATIONS_HOURS.map((hours) => (
+            <button
+              key={hours}
+              type="button"
+              className={styles.quiet}
+              disabled={nextFreeSlot === null}
+              onClick={() =>
+                nextFreeSlot !== null && void save(expeditionId(nextFreeSlot), 0, { hours })
+              }
+            >
+              Send {hours} h
+            </button>
+          ))}
+        </div>
+
+        {expeditions.some(({ state }) => state !== null) ? (
+          <div className={styles.action}>
+            {expeditions
+              .filter(({ state }) => state !== null)
+              .map(({ slot, state }) => (
+                <button
+                  key={slot}
+                  type="button"
+                  className={styles.quiet}
+                  onClick={() => void forget(expeditionId(slot))}
+                >
+                  {state!.done ? `Collect ${slot + 1}` : `Cancel ${slot + 1}`}
+                </button>
+              ))}
+          </div>
+        ) : null}
+
+        <p className={styles.hint}>
+          {nextFreeSlot === null
+            ? 'All five are out. Collect one to send another.'
+            : 'Sent expeditions keep counting while the app is closed.'}
+        </p>
 
         <h2 className={screen.sec}>Your teapot</h2>
         <div className={screen.ledger}>

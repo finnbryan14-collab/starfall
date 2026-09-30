@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { loadOrCreateActivePlan, makePlan, savePlan } from '@/db/plans';
+import { createPlan, deletePlan, listPlans, makePlan, savePlan } from '@/db/plans';
 import type { Plan } from '@/db/schema';
 import { listWishes } from '@/db/wishes';
 import { defaultTargetDate } from '@/engine/calendar/banners';
@@ -67,10 +67,19 @@ export type UsePlan = {
   /** The anchor carried forward to now. What the steppers show. */
   balance: CurrentBalance;
   update: (patch: Partial<Plan>) => void;
+  /** Every saved plan, most recently updated first. */
+  plans: Plan[];
+  /** Switches to a saved plan, flushing whatever is pending on this one. */
+  switchTo: (id: string) => void;
+  /** Starts a fresh plan and makes it the active one. */
+  addPlan: () => void;
+  /** Deletes the active plan and falls back to the next one. */
+  removePlan: () => void;
 };
 
 export function usePlan(now: Date = new Date(), utcOffset: number = AMERICA_UTC_OFFSET): UsePlan {
   const [plan, setPlan] = useState<Plan | null>(null);
+  const [plans, setPlans] = useState<Plan[]>([]);
   const [wishes, setWishes] = useState<Wish[]>([]);
   const [ready, setReady] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -81,12 +90,18 @@ export function usePlan(now: Date = new Date(), utcOffset: number = AMERICA_UTC_
     let cancelled = false;
     // On a device that will not store anything the provisional plan is what
     // the player gets: every number still computes, nothing is remembered.
-    void readOr(() => Promise.all([loadOrCreateActivePlan(firstRunPlan()), listWishes()]), [
-      null,
-      [],
-    ] as [Plan | null, Wish[]]).then(([loaded, storedWishes]) => {
+    void readOr(
+      async (): Promise<[Plan[], Wish[]]> => {
+        const stored = await listPlans();
+        // A first run gets one plan rather than an empty switcher.
+        const all = stored.length > 0 ? stored : [await createPlan(firstRunPlan())];
+        return [all, await listWishes()];
+      },
+      [[], []] as [Plan[], Wish[]],
+    ).then(([all, storedWishes]) => {
       if (cancelled) return;
-      if (loaded) setPlan(loaded);
+      setPlans(all);
+      if (all[0]) setPlan(all[0]);
       setWishes(storedWishes);
       setReady(true);
     });
@@ -108,8 +123,61 @@ export function usePlan(now: Date = new Date(), utcOffset: number = AMERICA_UTC_
       patch.primogems !== undefined || patch.fates !== undefined
         ? { ...patch, balanceConfirmedAt: Date.now() }
         : patch;
-    setPlan((previous) => (previous ? { ...previous, ...reanchored } : previous));
+    setPlan((previous) => {
+      if (!previous) return previous;
+      const next = { ...previous, ...reanchored };
+      // Keep the switcher's labels honest while the plan is being renamed.
+      setPlans((all) => all.map((p) => (p.id === next.id ? next : p)));
+      return next;
+    });
   }, []);
+
+  /**
+   * Writes whatever is pending before leaving a plan.
+   *
+   * The debounced save is cancelled when `plan` changes, so switching without
+   * this would silently drop the last 400ms of edits on the plan being left.
+   */
+  const flush = useCallback(async () => {
+    clearTimeout(saveTimer.current);
+    if (plan) await savePlan(plan);
+  }, [plan]);
+
+  const switchTo = useCallback(
+    (id: string) => {
+      void (async () => {
+        await flush();
+        const stored = await listPlans();
+        setPlans(stored);
+        const found = stored.find((p) => p.id === id);
+        if (found) setPlan(found);
+      })();
+    },
+    [flush],
+  );
+
+  const addPlan = useCallback(() => {
+    void (async () => {
+      await flush();
+      const created = await createPlan({ name: 'New plan' });
+      setPlans(await listPlans());
+      setPlan(created);
+    })();
+  }, [flush]);
+
+  const removePlan = useCallback(() => {
+    void (async () => {
+      if (!plan) return;
+      clearTimeout(saveTimer.current);
+      await deletePlan(plan.id);
+
+      const stored = await listPlans();
+      // Never leave the screen with nothing to render.
+      const remaining = stored.length > 0 ? stored : [await createPlan(firstRunPlan())];
+      setPlans(remaining);
+      setPlan(remaining[0]);
+    })();
+  }, [plan]);
 
   // Debounced write-back. The cleanup flushes nothing on unmount deliberately:
   // a pending edit is at most 400ms old, and writing during teardown races the
@@ -174,5 +242,29 @@ export function usePlan(now: Date = new Date(), utcOffset: number = AMERICA_UTC_
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [effectivePlan, balance, nowMs, ready, utcOffset]);
 
-  return { plan: effectivePlan, ready, result, balance, update };
+  /*
+    The stored list with the active plan's live edits folded in, so the
+    switcher's label follows a rename as it is typed.
+
+    Derived rather than kept in sync by hand. An earlier version updated the
+    list from inside `setPlan`'s updater, which makes the updater impure —
+    React may call it more than once — and the two pieces of state drifted
+    apart under exactly that.
+  */
+  const planList = useMemo(
+    () => plans.map((saved) => (plan && saved.id === plan.id ? plan : saved)),
+    [plans, plan],
+  );
+
+  return {
+    plan: effectivePlan,
+    ready,
+    result,
+    balance,
+    update,
+    plans: planList,
+    switchTo,
+    addPlan,
+    removePlan,
+  };
 }

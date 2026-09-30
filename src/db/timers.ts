@@ -13,6 +13,22 @@ export const TIMER_IDS = {
   realmCurrency: 'realm-currency',
 } as const;
 
+/**
+ * Five expedition slots, stored one row each.
+ *
+ * A slot's `setAt` is when it was sent and its `config.hours` is how long for,
+ * which is everything `expeditionAt` needs. An empty slot has no row at all
+ * rather than a row meaning "idle", so the store never carries a state that
+ * has to be interpreted.
+ */
+export const EXPEDITION_SLOTS = 5;
+
+export const expeditionId = (slot: number) => `expedition-${slot}`;
+
+export async function clearTimer(id: string): Promise<void> {
+  await db.timers.delete(id);
+}
+
 export async function listTimers(): Promise<TimerRow[]> {
   return db.timers.toArray();
 }
