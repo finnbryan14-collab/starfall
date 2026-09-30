@@ -25,10 +25,23 @@ const sourceSans3 = Source_Sans_3({
   variable: '--font-source-sans',
 });
 
+const DESCRIPTION =
+  'Your actual odds of getting the character you want, and whether that artifact is worth your resin.';
+
 export const metadata: Metadata = {
   title: 'Starfall',
-  description:
-    'Your actual odds of getting the character you want, and whether that artifact is worth your resin.',
+  description: DESCRIPTION,
+  applicationName: 'Starfall',
+  // This gets shared by pasting a URL to a friend, so the unfurled card is the
+  // first impression. `opengraph-image.tsx` draws it; Next resolves the URL
+  // from VERCEL_URL on a deploy.
+  openGraph: {
+    title: 'Starfall',
+    description: DESCRIPTION,
+    siteName: 'Starfall',
+    type: 'website',
+  },
+  twitter: { card: 'summary_large_image', title: 'Starfall', description: DESCRIPTION },
 };
 
 export const viewport: Viewport = {

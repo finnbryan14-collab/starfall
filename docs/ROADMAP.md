@@ -59,4 +59,4 @@ Work top to bottom. Each task is small enough for one Claude Code session. Check
 
     Once both are settled: the subscribe UI, the `/api/push` routes and the sender. The engine, the service-worker handlers and the key generation are done.
 - [ ] Deploy to Vercel. Lighthouse: performance ≥ 90, accessibility ≥ 95 on mobile. **Measured locally against a production build with `pnpm lighthouse`: performance 91–94, accessibility 100, best practices 100, SEO 100 on all four screens. The deploy itself needs Finn's Vercel account.**
-- [ ] Share with friends; collect the three most-wanted features from `docs/BACKLOG.md`.
+- [ ] Share with friends; collect the three most-wanted features from `docs/BACKLOG.md`. Open Graph card, licence and README are in place, so a pasted link unfurls properly.
