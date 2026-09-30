@@ -39,3 +39,6 @@ gen_preview.html
 
 # comparison screenshots (regenerate with pnpm test:e2e)
 screenshots/
+
+.vercel
+.env*
