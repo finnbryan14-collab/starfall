@@ -49,6 +49,7 @@ const GENSHIN_DB_DATA = 'genshin-db/src/min/data.min.json';
 
 const OUT_CHARACTERS = path.join(process.cwd(), 'src', 'data', 'characters-generated.ts');
 const OUT_WEAPONS = path.join(process.cwd(), 'src', 'data', 'weapons-generated.ts');
+const OUT_SETS = path.join(process.cwd(), 'src', 'data', 'artifact-sets-generated.ts');
 const OUT_TALENTS = path.join(process.cwd(), 'public', 'data', 'talents');
 
 /** Levels the game now allows. Characters reach 100; no weapon passes 90. */
@@ -89,10 +90,18 @@ type DbCombat = {
 
 type DbTalent = Record<string, DbCombat | undefined>;
 
+type DbArtifact = {
+  name: string;
+  rarityList: number[];
+  effect2Pc?: string;
+  effect4Pc?: string;
+};
+
 type Db = {
   characters: DbQuery<DbCharacter>;
   weapons: DbQuery<DbWeapon>;
   talents: DbQuery<DbTalent>;
+  artifacts: DbQuery<DbArtifact>;
 };
 
 type RawPromotion = {
@@ -230,6 +239,120 @@ function curveTable(
 }
 
 // ---------------------------------------------------------------------------
+// Artifact sets
+// ---------------------------------------------------------------------------
+
+/**
+ * Every shape a 2-piece bonus is written in.
+ *
+ * The game's wording is inconsistent — "ATK +18%", "Increases Elemental Mastery
+ * by 80", "Gain a 15% Geo DMG Bonus", "Physical DMG is increased by 25%" — so
+ * this is four patterns rather than one, and the effect's *name* is pulled out
+ * separately from its size.
+ */
+const SET_EFFECT_PATTERNS: { pattern: RegExp; what: number; num: number; percent: number }[] = [
+  // "Gain a 15% Geo DMG Bonus." — the only wording that leads with the number.
+  {
+    pattern: /^Gain an? ([\d.]+)(%) ([A-Za-z' -]+? DMG Bonus)\.?$/i,
+    num: 1,
+    percent: 2,
+    what: 3,
+  },
+  // "ATK +18%.", "CRIT Rate +12%"
+  { pattern: /^([A-Za-z' -]+?) \+([\d,.]+)(%?)\.?$/i, what: 1, num: 2, percent: 3 },
+  // "Increases Elemental Mastery by 80."
+  { pattern: /^Increases ([A-Za-z' -]+?) by ([\d,.]+)(%?)\.?$/i, what: 1, num: 2, percent: 3 },
+  // "Max HP increased by 1,000.", "Physical DMG is increased by 25%."
+  {
+    pattern: /^([A-Za-z' -]+?) (?:is )?increased by ([\d,.]+)(%?)\.?$/i,
+    what: 1,
+    num: 2,
+    percent: 3,
+  },
+];
+
+/** Effect names that are a plain stat. The percent flag decides flat from percent. */
+const SET_STAT_NAMES: Record<string, { percent: string; flat: string }> = {
+  ATK: { percent: 'atk_', flat: 'atk' },
+  DEF: { percent: 'def_', flat: 'def' },
+  HP: { percent: 'hp_', flat: 'hp' },
+  'Max HP': { percent: 'hp_', flat: 'hp' },
+  'CRIT Rate': { percent: 'cr', flat: 'cr' },
+  'CRIT DMG': { percent: 'cd', flat: 'cd' },
+  'Energy Recharge': { percent: 'er', flat: 'er' },
+  'Elemental Mastery': { percent: 'em', flat: 'em' },
+  'Healing Bonus': { percent: 'heal', flat: 'heal' },
+  'Character Healing Effectiveness': { percent: 'heal', flat: 'heal' },
+  'Physical DMG': { percent: 'physical_dmg', flat: 'physical_dmg' },
+};
+
+/** DMG bonuses that only apply to some hits. */
+const SET_HIT_NAMES: Record<string, string[]> = {
+  'Normal Attack DMG': ['normal'],
+  'Charged Attack DMG': ['charged'],
+  'Normal and Charged Attack DMG': ['normal', 'charged'],
+  'Plunging Attack DMG': ['plunge'],
+  'Elemental Skill DMG': ['skill'],
+  'Elemental Burst DMG': ['burst'],
+};
+
+/** Real effects that cannot change an outgoing damage number. */
+const SET_DEFENSIVE = /\bRES\b|Shield Strength|incoming healing/i;
+
+type ParsedSetEffect =
+  | { kind: 'stats'; stats: Record<string, number> }
+  | { kind: 'hit'; categories: string[]; amount: number }
+  | { kind: 'defensive' }
+  | { kind: 'conditional' };
+
+/**
+ * A 2-piece bonus, as data where it can be and as an admission where it cannot.
+ *
+ * Two of the 63 sets word their 2-piece as a condition — Obsidian Codex wants
+ * Nightsoul's Blessing, Scroll of the Hero of Cinder City wants a party member
+ * to trigger a Nightsoul Burst — and neither is a stat anyone can read off a
+ * sentence. Those come back `conditional`, which the UI turns into an input the
+ * player ticks rather than a number Starfall invents.
+ */
+function parseSetEffect(text: string): ParsedSetEffect {
+  const trimmed = text.trim();
+
+  for (const shape of SET_EFFECT_PATTERNS) {
+    const match = shape.pattern.exec(trimmed);
+    if (!match) continue;
+
+    const what = match[shape.what].trim();
+    const amount = Number(match[shape.num].replace(/,/g, ''));
+    const percent = match[shape.percent] === '%';
+    if (!Number.isFinite(amount)) continue;
+
+    if (SET_DEFENSIVE.test(what)) return { kind: 'defensive' };
+
+    const hit = SET_HIT_NAMES[what];
+    if (hit) return { kind: 'hit', categories: hit, amount: percent ? amount / 100 : amount };
+
+    // "Geo DMG Bonus", "Cryo DMG Bonus" — the elemental goblet stats.
+    const elemental = /^(\w+) DMG Bonus$/.exec(what);
+    if (elemental) {
+      const element = elemental[1].toLowerCase();
+      if (ELEMENTS.includes(element as (typeof ELEMENTS)[number])) {
+        return { kind: 'stats', stats: { [`${element}_dmg`]: amount / 100 } };
+      }
+    }
+
+    const stat = SET_STAT_NAMES[what];
+    if (stat) {
+      const key = percent ? stat.percent : stat.flat;
+      return { kind: 'stats', stats: { [key]: percent ? amount / 100 : amount } };
+    }
+
+    throw new Error(`unmapped set effect "${what}" in: ${trimmed}`);
+  }
+
+  return { kind: 'conditional' };
+}
+
+// ---------------------------------------------------------------------------
 // Talents
 // ---------------------------------------------------------------------------
 
@@ -261,7 +384,7 @@ type TalentHit = { label: string; parts: TalentPart[] };
  * Stration", and both of those really are hits.
  */
 const NOT_DAMAGE =
-  /bonus|absorb|resistance|reduction|increase|decrease|interval|duration|multiplier|cost|consumption|regenerat|restored|healing|conversion|ratio|rate|chance|resolve|maximum|mitigation|inherited|gain|RES|SPD|CD|stamina|energy|shield|heal/i;
+  /bonus|absorb|resistance|reduction|increase|decrease|interval|duration|multiplier|cost|consumption|regenerat|restored|healing|conversion|\bratio\b|\brate\b|chance|resolve|maximum|mitigation|inherited|\bgain\b|\bRES\b|\bSPD\b|\bCD\b|stamina|energy|shield|\bheal\b/i;
 
 /**
  * A hit, or something else.
@@ -516,6 +639,43 @@ async function main(): Promise<void> {
 
   weapons.sort((a, b) => a.key.localeCompare(b.key));
 
+  // --- artifact sets -----------------------------------------------------
+
+  const sets: { key: string; record: string }[] = [];
+  const unmodelledSets: string[] = [];
+
+  for (const name of db.artifacts('names', { matchCategories: true })) {
+    const set = db.artifacts(name);
+    if (!set) throw new Error(`no artifact set named ${name}`);
+
+    const twoPiece = set.effect2Pc?.trim() ?? null;
+    const effect = twoPiece ? parseSetEffect(twoPiece) : null;
+    if (effect && effect.kind !== 'stats' && effect.kind !== 'hit') {
+      unmodelledSets.push(`${name} (${effect.kind})`);
+    }
+
+    sets.push({
+      key: goodKey(name),
+      record: line({
+        key: goodKey(name),
+        name,
+        rarities: set.rarityList,
+        text: { twoPiece, fourPiece: set.effect4Pc?.trim() ?? null },
+        twoPieceStats: effect?.kind === 'stats' ? effect.stats : null,
+        twoPieceHitBonus:
+          effect?.kind === 'hit' ? { categories: effect.categories, amount: effect.amount } : null,
+        twoPieceUnmodelled:
+          effect === null
+            ? 'none'
+            : effect.kind === 'stats' || effect.kind === 'hit'
+              ? null
+              : effect.kind,
+      }),
+    });
+  }
+
+  sets.sort((a, b) => a.key.localeCompare(b.key));
+
   // --- the self-check ----------------------------------------------------
   //
   // Every character at every level and phase, against genshin-db's own stat
@@ -723,9 +883,56 @@ async function main(): Promise<void> {
     'utf8',
   );
 
+  await writeFile(
+    OUT_SETS,
+    [
+      header(source),
+      "import type { StatMap } from '@/engine/stats/scaling';",
+      '',
+      '/** Which hits a bonus applies to. A talent group, plus the two the',
+      ' *  labels name themselves. */',
+      "export type HitCategory = 'normal' | 'charged' | 'plunge' | 'skill' | 'burst';",
+      '',
+      'export type ArtifactSetData = {',
+      '  /** GOOD key, which is how a scanner export names this set. */',
+      '  key: string;',
+      '  name: string;',
+      '  rarities: number[];',
+      "  /** The game's own wording, for display. */",
+      '  text: { twoPiece: string | null; fourPiece: string | null };',
+      '  /** The 2-piece as a stat bonus, in engine units. Null when it is not one. */',
+      '  twoPieceStats: StatMap | null;',
+      '  /** A 2-piece DMG bonus that only applies to some hits. */',
+      '  twoPieceHitBonus: { categories: HitCategory[]; amount: number } | null;',
+      '  /**',
+      '   * Why the 2-piece is not modelled, when it is not.',
+      '   *',
+      "   * 'conditional' needs the player to say whether it is active,",
+      "   * 'defensive' cannot change an outgoing damage number, and 'none' means",
+      '   * the set has no 2-piece bonus at all.',
+      '   *',
+      '   * A 4-piece bonus is never modelled: they are conditional by design, so',
+      '   * the text is carried for display and the effect is an explicit input.',
+      '   * docs/MATH.md section 6.',
+      '   */',
+      "  twoPieceUnmodelled: 'conditional' | 'defensive' | 'none' | null;",
+      '};',
+      '',
+      'export const ARTIFACT_SETS: Record<string, ArtifactSetData> = {',
+      ...sets.map(({ key, record }) => `  ${JSON.stringify(key)}: ${record},`),
+      '};',
+      '',
+    ].join('\n'),
+    'utf8',
+  );
+
   console.log(`characters: ${characters.length}, weapons: ${weapons.length}, talent hits: ${hits}`);
+  console.log(`artifact sets: ${sets.length}`);
   console.log(`cross-checked ${checked.toLocaleString('en-US')} character and weapon stat rows`);
 
+  if (unmodelledSets.length > 0) {
+    console.log(`2-piece bonus not modelled: ${unmodelledSets.join(', ')}`);
+  }
   if (collisions.length > 0) {
     console.log(`same GOOD key as an earlier weapon, skipped: ${collisions.join(', ')}`);
   }

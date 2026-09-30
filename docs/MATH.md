@@ -342,6 +342,56 @@ Characters now reach **level 100**: the wiki's tables print rows for 95/95 and 1
 
 ---
 
+## 8. Assembling a build
+
+Base stats and the damage formula meet here: a character, a weapon, five artifacts and whatever the player says their team is doing, turned into one number.
+
+### Total ATK, and the mistake it invites
+
+    ATK = [(ATK_character + ATK_weapon) x (1 + ATK%)] + flat ATK
+
+The percentage multiplies the **base** only. Adding a flat ATK plume before the multiplication rather than after is worth about 165 extra ATK on a real build — a plausible-looking figure that is simply not the one in the game. The wiki also says in as many words that ATK% and DMG% are different things; they are different keys here (`atk_` against `pyro_dmg`) so they cannot be confused.
+
+HP and DEF follow the same shape with one difference: **no weapon in the game has base HP or base DEF**, so an HP-scaling character gains nothing there. Their base is the character's alone.
+
+Elemental Mastery is the odd one out: no base, no percentage, only ever a flat bonus. Running it through the base formula would return zero.
+
+- source: https://genshin-impact.fandom.com/wiki/ATK
+- verifiedAt: 2026-09-30
+
+### Which DMG bonus applies
+
+The DMG Bonus term is the sum of two different things:
+
+1. The build's bonus for **this hit's element**, or Physical for a physical hit. A Cryo goblet does nothing for a Pyro hit.
+2. Any bonus that applies to **this kind of hit** only. Noblesse Oblige's 2-piece is +20% Burst DMG, not +20% damage — applying it to an Elemental Skill would overstate the build by a fifth.
+
+Hit kinds are `normal`, `charged`, `plunge`, `skill` and `burst`. The first three come from a talent's own label ("Charged Attack", "Low/High Plunge DMG"); the last two are the talent group.
+
+### Artifact set bonuses
+
+Of the 63 sets, every 2-piece bonus is classified at build time into one of four states:
+
+| State        | Sets | What happens                                              |
+| ------------ | ---- | --------------------------------------------------------- |
+| a stat bonus | 46   | applied — ATK%, an elemental DMG bonus, Elemental Mastery |
+| a hit bonus  | 6    | applied to the hits it names                              |
+| defensive    | 5    | cannot change an outgoing damage number; reported         |
+| conditional  | 2    | needs the player to answer something; reported            |
+| none         | 4    | the set has no 2-piece at all                             |
+
+A **4-piece bonus is never applied**. That is the boundary rather than an omission: they are conditional by design — stacks, durations, "after using an Elemental Skill" — and no dataset encodes them as something executable. An active 4-piece comes back with the game's own wording so a screen can ask about it. A set Starfall has never heard of, which a scanner export can name after a new patch, is reported the same way rather than silently contributing nothing.
+
+A 4-piece set still gives its 2-piece bonus. Easy to forget, and worth 15% when it is an elemental one.
+
+### Team buffs
+
+Explicit inputs, in engine units, never inferred from a team. No dataset encodes "Bennett's burst gives +X ATK" as executable logic, so each one is typed in or comes from a hand-written preset. The same applies to weapon and talent passives, and to enemy RES shred.
+
+Saying so is the difference between a calculator that is wrong and one that is incomplete.
+
+---
+
 ## Sources
 
 - Pity and consolidated rates: https://news.bittopup.com/news/genshin-impact-pity-system-guide-90-pull-guarantee-50-50
@@ -353,6 +403,7 @@ Characters now reach **level 100**: the wiki's tables print rows for 95/95 and 1
 - Sanctifying Elixir 5.5 change: https://www.sportskeeda.com/esports/genshin-impact-5-5-introduce-new-artifacts-qol-feature
 - Banner calendar (7.1): https://game8.co/games/Genshin-Impact/archives/305012
 - Damage formula, with the worked example used as a test: https://genshin-impact.fandom.com/wiki/Damage
+- Total ATK, and that ATK% is not DMG%: https://genshin-impact.fandom.com/wiki/ATK
 - Base stat growth, ascension tables and base crit: https://genshin-impact.fandom.com/wiki/Hu_Tao, https://genshin-impact.fandom.com/wiki/Bennett, https://genshin-impact.fandom.com/wiki/Staff_of_Homa, https://genshin-impact.fandom.com/wiki/Favonius_Sword and https://genshin-impact.fandom.com/wiki/CRIT_Rate
 - Server reset times and offsets: https://game8.co/games/Genshin-Impact/archives/301599 and https://www.rpgsite.net/feature/10336-genshin-impact-daily-reset-time-when-the-server-reset-is-in-your-region
 - Intertwined Fate price and use: https://genshin-impact.fandom.com/wiki/Intertwined_Fate
