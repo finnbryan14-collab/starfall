@@ -3,13 +3,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { artifactCount, replaceInventory } from '@/db/artifacts';
+import { replaceRoster } from '@/db/roster';
 import {
   countBySlot,
   describeGood,
   GOOD_FAILURE_COPY,
   parseGood,
   toImportedArtifacts,
+  toImportedCharacters,
+  toImportedWeapons,
   type GoodCounts,
+  type GoodFile,
   type ImportedArtifact,
 } from '@/lib/good';
 import { formatNumber } from '@/lib/format';
@@ -29,6 +33,7 @@ type Status =
   | { kind: 'idle' }
   | {
       kind: 'confirming';
+      good: GoodFile;
       artifacts: ImportedArtifact[];
       counts: GoodCounts;
       source: string;
@@ -69,17 +74,26 @@ export function GoodImport() {
 
     setStatus({
       kind: 'confirming',
+      good: result.good,
       artifacts: toImportedArtifacts(result.good),
       counts: result.counts,
       source: result.source,
     });
   }, []);
 
-  const confirm = useCallback(async (artifacts: ImportedArtifact[], counts: GoodCounts) => {
-    await replaceInventory(artifacts);
-    setStored(artifacts.length);
-    setStatus({ kind: 'done', message: `Imported ${describeGood(counts)}.` });
-  }, []);
+  const confirm = useCallback(
+    async (good: GoodFile, artifacts: ImportedArtifact[], counts: GoodCounts) => {
+      // The whole account, not just the bag: talent levels and constellations
+      // come from nowhere else, and a damage number cannot be computed without
+      // them.
+      await replaceInventory(artifacts);
+      await replaceRoster(toImportedCharacters(good), toImportedWeapons(good));
+
+      setStored(artifacts.length);
+      setStatus({ kind: 'done', message: `Imported ${describeGood(counts)}.` });
+    },
+    [],
+  );
 
   return (
     <>
@@ -157,7 +171,7 @@ export function GoodImport() {
             <button
               type="button"
               className={styles.primary}
-              onClick={() => void confirm(status.artifacts, status.counts)}
+              onClick={() => void confirm(status.good, status.artifacts, status.counts)}
             >
               Replace my inventory
             </button>

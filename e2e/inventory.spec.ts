@@ -198,4 +198,78 @@ test.describe('GOOD inventory import', () => {
 
     expect(backup.tables.artifacts).toHaveLength(5);
   });
+
+  /**
+   * Enka returns eight characters and no artifact bag at all, so a scanner
+   * export is the only thing that sees the whole account. It used to be
+   * counted and thrown away — only artifacts were kept.
+   */
+  test('keeps the characters and weapons, not just the bag', async ({ page }) => {
+    await choose(page, goodFile());
+    await page.getByRole('button', { name: 'Replace my inventory' }).click();
+    await expect(page.getByText(/Imported 5 artifacts/)).toBeVisible();
+
+    await page.getByRole('link', { name: /every character and artifact/i }).click();
+    await expect(page).toHaveURL(/\/account\/roster$/);
+
+    await expect(page.getByText(/2 characters and 5 artifacts/)).toBeVisible();
+
+    const roster = page.getByLabel('Every character on the account');
+    await expect(roster).toContainText('Kamisato Ayaka');
+    await expect(roster).toContainText('Nahida');
+  });
+
+  test('shows the talent levels no API carries', async ({ page }) => {
+    await choose(
+      page,
+      goodFile({
+        characters: [
+          {
+            key: 'KamisatoAyaka',
+            level: 90,
+            constellation: 1,
+            talent: { auto: 9, skill: 10, burst: 8 },
+          },
+        ],
+      }),
+    );
+    await page.getByRole('button', { name: 'Replace my inventory' }).click();
+    await page.goto('/account/roster');
+
+    const roster = page.getByLabel('Every character on the account');
+    await expect(roster).toContainText('Kamisato Ayaka');
+    await expect(roster).toContainText('C1');
+    await expect(roster).toContainText('Lv 90');
+    // Without these a damage number cannot be computed at all.
+    await expect(roster).toContainText('Talents 9/10/8');
+  });
+
+  test('shows every artifact in the bag, and who is wearing it', async ({ page }) => {
+    await choose(page, goodFile());
+    await page.getByRole('button', { name: 'Replace my inventory' }).click();
+    await page.goto('/account/roster');
+
+    await page.getByRole('tab', { name: /Artifacts/ }).click();
+    const bag = page.getByLabel('Every artifact in the bag');
+    await expect(bag).toContainText('Blizzard Strayer');
+    await expect(bag).toContainText('on Kamisato Ayaka');
+    await expect(bag).toContainText('unequipped');
+  });
+
+  test('filters a large account down', async ({ page }) => {
+    await choose(page, goodFile());
+    await page.getByRole('button', { name: 'Replace my inventory' }).click();
+    await page.goto('/account/roster');
+
+    await page.getByLabel('Filter').fill('Nahida');
+    const roster = page.getByLabel('Every character on the account');
+    await expect(roster).toContainText('Nahida');
+    await expect(roster).not.toContainText('Kamisato Ayaka');
+  });
+
+  test('says where the data comes from when nothing is imported', async ({ page }) => {
+    await page.goto('/account/roster');
+    await expect(page.getByText(/Nothing imported yet/)).toBeVisible();
+    await expect(page.getByText(/no API exposes the artifact bag/)).toBeVisible();
+  });
 });

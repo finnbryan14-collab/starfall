@@ -77,10 +77,33 @@ const goodArtifact = z.looseObject({
   substats: z.array(goodSubstat),
 });
 
+/**
+ * Talent levels, which only a scanner export carries.
+ *
+ * No API exposes them — not Enka, not HoYoLAB's Chronicle — and a damage
+ * calculation is wrong without them, since the multiplier is read off the
+ * level.
+ */
+const goodTalent = z.looseObject({
+  auto: z.number().int().min(1).max(15).optional(),
+  skill: z.number().int().min(1).max(15).optional(),
+  burst: z.number().int().min(1).max(15).optional(),
+});
+
 const goodCharacter = z.looseObject({
   key: z.string().min(1),
   level: z.number().int().min(1).max(90).optional(),
   constellation: z.number().int().min(0).max(6).optional(),
+  ascension: z.number().int().min(0).max(6).optional(),
+  talent: goodTalent.optional(),
+});
+
+const goodWeapon = z.looseObject({
+  key: z.string().min(1),
+  level: z.number().int().min(1).max(90).optional(),
+  ascension: z.number().int().min(0).max(6).optional(),
+  refinement: z.number().int().min(1).max(5).optional(),
+  location: z.string().optional(),
 });
 
 export const goodSchema = z.looseObject({
@@ -89,11 +112,96 @@ export const goodSchema = z.looseObject({
   source: z.string().optional(),
   characters: z.array(goodCharacter).optional(),
   artifacts: z.array(goodArtifact).optional(),
-  weapons: z.array(z.looseObject({ key: z.string().min(1) })).optional(),
+  weapons: z.array(goodWeapon).optional(),
 });
 
 export type GoodFile = z.infer<typeof goodSchema>;
 export type GoodArtifact = z.infer<typeof goodArtifact>;
+
+/**
+ * A character as the app uses one.
+ *
+ * `key` is GOOD's PascalCase name — "KamisatoAyaka". Kept as-is rather than
+ * prettified, because it is the join key against every other dataset and a
+ * display name is a lossy round trip.
+ */
+export type ImportedCharacter = {
+  key: string;
+  /** "KamisatoAyaka" -> "Kamisato Ayaka", for reading. */
+  name: string;
+  level: number;
+  ascension: number;
+  constellation: number;
+  talent: { auto: number; skill: number; burst: number };
+  /** The weapon they are holding, if the export says. */
+  weapon: ImportedWeapon | null;
+  /** How many artifacts in the bag are equipped on them. */
+  artifactCount: number;
+};
+
+export type ImportedWeapon = {
+  key: string;
+  name: string;
+  level: number;
+  ascension: number;
+  refinement: number;
+  /** The character holding it, or '' when it is in the bag. */
+  location: string;
+};
+
+/** `KamisatoAyaka` -> `Kamisato Ayaka`. */
+export function readableKey(key: string): string {
+  return key
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/_/g, ' ')
+    .trim();
+}
+
+export function toImportedWeapons(good: GoodFile): ImportedWeapon[] {
+  return (good.weapons ?? []).map((weapon) => ({
+    key: weapon.key,
+    name: readableKey(weapon.key),
+    level: weapon.level ?? 1,
+    ascension: weapon.ascension ?? 0,
+    refinement: weapon.refinement ?? 1,
+    location: weapon.location ?? '',
+  }));
+}
+
+/**
+ * Every character in the export, with what they are holding and wearing.
+ *
+ * The weapon and artifact counts are resolved here rather than at render time
+ * because GOOD expresses both as a `location` back-reference, and a screen
+ * should not have to know that.
+ */
+export function toImportedCharacters(good: GoodFile): ImportedCharacter[] {
+  const weapons = toImportedWeapons(good);
+  const equipped = new Map(weapons.filter((w) => w.location).map((w) => [w.location, w]));
+
+  const worn = new Map<string, number>();
+  for (const artifact of good.artifacts ?? []) {
+    if (!artifact.location) continue;
+    worn.set(artifact.location, (worn.get(artifact.location) ?? 0) + 1);
+  }
+
+  return (good.characters ?? [])
+    .map((character) => ({
+      key: character.key,
+      name: readableKey(character.key),
+      level: character.level ?? 1,
+      ascension: character.ascension ?? 0,
+      constellation: character.constellation ?? 0,
+      talent: {
+        auto: character.talent?.auto ?? 1,
+        skill: character.talent?.skill ?? 1,
+        burst: character.talent?.burst ?? 1,
+      },
+      weapon: equipped.get(character.key) ?? null,
+      artifactCount: worn.get(character.key) ?? 0,
+    }))
+    .sort((a, b) => b.level - a.level || a.name.localeCompare(b.name));
+}
 
 export type GoodFailure = 'not-json' | 'not-good' | 'unsupported-version' | 'malformed';
 

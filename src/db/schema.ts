@@ -84,6 +84,32 @@ export type TimerRow = {
 };
 export type SettingRow = { key: string; value: unknown; updatedAt: number };
 
+/**
+ * A character from a scanner export, keyed by GOOD's own name.
+ *
+ * Separate from `characters`, which is Enka's showcase keyed by `[uid+avatarId]`
+ * and holds at most eight. This is the whole roster, and it is the only source
+ * that carries talent levels — which a damage number cannot be computed
+ * without.
+ */
+export type RosterRow = {
+  /** GOOD's PascalCase key, e.g. `KamisatoAyaka`. */
+  key: string;
+  level: number;
+  constellation: number;
+  data: unknown;
+  updatedAt: number;
+};
+
+export type WeaponRow = {
+  /** `key` is not unique — a player can own several of the same weapon. */
+  id: string;
+  key: string;
+  location: string;
+  data: unknown;
+  updatedAt: number;
+};
+
 export class StarfallDb extends Dexie {
   plans!: EntityTable<Plan, 'id'>;
   profile!: EntityTable<ProfileRow, 'uid'>;
@@ -92,6 +118,8 @@ export class StarfallDb extends Dexie {
   wishes!: EntityTable<WishRow, 'id'>;
   timers!: EntityTable<TimerRow, 'id'>;
   settings!: EntityTable<SettingRow, 'key'>;
+  roster!: EntityTable<RosterRow, 'key'>;
+  weapons!: EntityTable<WeaponRow, 'id'>;
 
   constructor(name = 'starfall') {
     super(name);
@@ -103,6 +131,16 @@ export class StarfallDb extends Dexie {
       plans: 'id, updatedAt',
       timers: 'id',
       settings: 'key',
+    });
+
+    /*
+      Added when the GOOD import started keeping the whole account rather than
+      only its artifacts. A new store is a migration, and Dexie handles it by
+      leaving every existing table untouched — nothing has to be rewritten.
+    */
+    this.version(2).stores({
+      roster: 'key, level',
+      weapons: 'id, key, location',
     });
   }
 }

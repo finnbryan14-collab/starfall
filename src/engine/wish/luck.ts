@@ -52,18 +52,48 @@ export function pullsForFiveStarsDist(copies: number): Float64Array {
   const single = next5Dist(0);
   let dist = single;
 
+  /*
+    The support grows by 90 with every copy, but the *mass* does not: by forty
+    copies it occupies a band a few hundred wide inside a range of 3,600. Left
+    untrimmed the cost is quadratic in that dead space — 150 copies took the
+    better part of seven seconds, which is the sort of thing that only shows up
+    once a machine is busy.
+
+    Entries below this share of the peak contribute nothing a percentage
+    rounded to a whole number could ever see, and dropping them keeps the total
+    within float noise of 1. A test asserts that.
+  */
+  const NEGLIGIBLE = 1e-15;
+
   for (let i = 1; i < copies; i++) {
     const next = new Float64Array(dist.length + HARD_PITY);
+
     for (let a = 1; a < dist.length; a++) {
       const weight = dist[a];
       if (weight === 0) continue;
       for (let b = 1; b < single.length; b++) {
-        if (single[b] === 0) continue;
         next[a + b] += weight * single[b];
       }
     }
-    dist = next;
+
+    dist = trim(next, NEGLIGIBLE);
   }
+
+  return dist;
+}
+
+/**
+ * Zeroes the negligible tails so the next convolution skips them.
+ *
+ * The array keeps its length and its indices — they *are* the pull count — so
+ * only the values are cleared. The inner loop already skips zeroes.
+ */
+function trim(dist: Float64Array, relative: number): Float64Array {
+  let peak = 0;
+  for (let i = 0; i < dist.length; i++) if (dist[i] > peak) peak = dist[i];
+
+  const floor = peak * relative;
+  for (let i = 0; i < dist.length; i++) if (dist[i] < floor) dist[i] = 0;
 
   return dist;
 }

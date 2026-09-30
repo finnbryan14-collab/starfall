@@ -20,6 +20,17 @@ export default defineConfig({
   reporter: process.env.CI ? 'github' : [['html', { open: 'never' }]],
   use: { baseURL, trace: 'on-first-retry' },
 
+  /*
+    Ten seconds, not the default five.
+
+    Every assertion here is about correctness, never about speed — there is a
+    separate `pnpm perf` for that, deliberately run alone. At 280 tests across
+    twelve workers, each driving a browser and an IndexedDB, five seconds
+    started failing assertions that pass in isolation. A longer ceiling costs
+    nothing on a green run and stops the suite reporting load as breakage.
+  */
+  expect: { timeout: 10_000 },
+
   // The two widths every UI task is checked at (CLAUDE.md, DESIGN.md).
   projects: [
     {

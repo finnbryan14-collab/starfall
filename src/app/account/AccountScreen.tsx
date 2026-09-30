@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
 import screen from '@/components/screen.module.css';
@@ -239,6 +240,12 @@ export function AccountScreen() {
         <WishImport />
 
         <GoodImport />
+
+        <p className={screen.caption}>
+          <Link href="/account/roster" className={styles.quiet}>
+            See every character and artifact
+          </Link>
+        </p>
 
         <HoyolabPanel uid={profile?.uid ?? null} />
 
