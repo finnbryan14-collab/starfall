@@ -29,3 +29,11 @@ Ideas from planning, not scheduled. Pull into ROADMAP.md when v1 ships.
 - Optional sync (accounts) once more than a few friends use it.
 - Home-screen widget for resin (needs a native wrapper, e.g. Capacitor).
 - Experimental Capturing Radiance loss-counter model toggle.
+
+## Blocked on someone else
+
+- **Akasha build rankings.** `GET akasha.cv/api/getCalculationsForUser/{uid}` returns, per showcased character, the damage calculation with its exact conditions and that account's placement — `ranking: 110104, outOf: 270589` — keyed on the UID already imported. It would answer the one question the artifact scorer cannot: not "is this piece worth resin" but "is this build any good".
+
+  Blocked by their Cloudflare, which fingerprints the client. From one machine at one instant with one User-Agent, curl gets 200 and Node's `fetch` gets 403, so a serverless function is refused. There is no browser route either: the API sends no `Access-Control-Allow-Origin` and answers a cross-origin preflight with 403.
+
+  Both ways through would mean circumventing that — impersonating a browser's TLS handshake, or stripping the `Origin` header — so the only legitimate next step is to ask the maintainer for an API key or an allowlisted User-Agent. See DECISIONS, 2026-09-29.
