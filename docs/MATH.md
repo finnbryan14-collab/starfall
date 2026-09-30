@@ -240,6 +240,53 @@ The server is read off the UID (`src/engine/account/server.ts`), so nobody is as
 
 ---
 
+## 6. Outgoing damage
+
+The formula every damage number in the game comes from. Written down here because the optimiser's whole job is to maximise it, and a search is only as good as the objective it is searching against.
+
+    DMG = (Σ(Base DMG × Base Multiplier) + Additive Base Bonus)
+          × DMG Bonus × Elevation
+          × DEF Multiplier × RES Multiplier × CRIT Multiplier
+          [× Amplifying Multiplier, when the hit triggers Vaporize or Melt]
+
+- **Base DMG** = ability% × the stat it scales with (ATK unless the talent says otherwise — some scale off Max HP, DEF or EM).
+- **DEF Multiplier** = `(Lv_char + 100) / (k × (Lv_enemy + 100) + (Lv_char + 100))`, where `k = (1 − DEF reduction)(1 − DEF ignored)`. Note this depends on _character_ level, so a level-90 character takes less of a penalty than a level-70 one against the same enemy.
+- **RES Multiplier** is piecewise, and the negative branch is why RES shred is so strong:
+
+  | RES       | Multiplier        |
+  | --------- | ----------------- |
+  | < 0       | 1 − RES/2         |
+  | 0 to 0.75 | 1 − RES           |
+  | ≥ 0.75    | 1 / (4 × RES + 1) |
+
+- **CRIT Multiplier** is `1 + CRIT DMG` on a crit and `1` otherwise. Starfall also reports an **average**, `1 + min(1, CRIT Rate) × CRIT DMG`, which is ours rather than the game's — it is the right objective for an optimiser, because a build is played many times, not once. Crit rate is capped at 1 in that average: overcapped rate is genuinely wasted and the number should say so.
+- **Amplifying Multiplier** = coefficient × (1 + EM bonus + reaction bonus), where the coefficient is 2.0 for Melt triggered by Pyro, 1.5 for Melt triggered by Cryo, 2.0 for Vaporize triggered by Hydro, 1.5 for Vaporize triggered by Pyro.
+- **EM bonus (amplifying)** = `2.78 × EM / (EM + 1400)`. Transformative reactions use `16 × EM / (EM + 2000)` instead and are not implemented yet.
+
+### The test case
+
+The wiki's own worked example, reproduced exactly by `src/engine/damage/formula.test.ts`:
+
+> Mona at level 70 with 1500 ATK, 150 EM, 80% CRIT DMG and 40% Hydro DMG Bonus, casting a level 6 Stellaris Phantasm (6.19×) with a further 52% bonus, into a level 75 Fatui Agent at 10% base Hydro RES shredded 40%, with 23% DEF reduction, critting and triggering Vaporize.
+
+    DEF mult   = 170 / (0.77 × 175 + 170)        = 0.55783
+    RES mult   = 1 − (−0.3 / 2)                  = 1.15
+    EM bonus   = 2.78 × 150 / 1550               = 0.26903
+    Amplifying = 2 × 1.26903                     = 2.53806
+    DMG        = 1500 × 6.19 × 1.92 × 0.55783 × 1.15 × 2.53806 × 1.8
+               = 52,246.50
+
+The wiki prints 52,246.50, which is what those _rounded_ intermediates multiply out to. Carrying full precision through the same formula gives **52,246.9986**, and that is what Starfall reports. Every intermediate agrees with the wiki's to every digit it printed, so the half-point is display rounding rather than a difference in the model — worth knowing before comparing against a hand calculation.
+
+- source: https://genshin-impact.fandom.com/wiki/Damage
+- verifiedAt: 2026-09-30
+
+### Not modelled
+
+Transformative reactions, elevation, and anything conditional a talent or weapon passive does. Team buffs are **explicit inputs**, not inferred: no dataset encodes "Bennett's burst gives +X ATK" as something executable, so each one is written by hand or typed by the player. Saying so is the difference between a calculator that is wrong and one that is incomplete.
+
+---
+
 ## Sources
 
 - Pity and consolidated rates: https://news.bittopup.com/news/genshin-impact-pity-system-guide-90-pull-guarantee-50-50
@@ -250,6 +297,7 @@ The server is read off the UID (`src/engine/account/server.ts`), so nobody is as
 - Domain drop rates and 4-line chances: https://news.bittopup.com/news/genshin-impact-loot-scaling-guide-ar45-drop-rates
 - Sanctifying Elixir 5.5 change: https://www.sportskeeda.com/esports/genshin-impact-5-5-introduce-new-artifacts-qol-feature
 - Banner calendar (7.1): https://game8.co/games/Genshin-Impact/archives/305012
+- Damage formula, with the worked example used as a test: https://genshin-impact.fandom.com/wiki/Damage
 - Server reset times and offsets: https://game8.co/games/Genshin-Impact/archives/301599 and https://www.rpgsite.net/feature/10336-genshin-impact-daily-reset-time-when-the-server-reset-is-in-your-region
 - Intertwined Fate price and use: https://genshin-impact.fandom.com/wiki/Intertwined_Fate
 - Acquaint Fate is for Standard and Beginners' Wish: https://genshin-impact.fandom.com/wiki/Acquaint_Fate
