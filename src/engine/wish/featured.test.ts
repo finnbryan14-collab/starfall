@@ -37,6 +37,18 @@ function simulateFeatured(
   return pulls;
 }
 
+/**
+ * Vitest's default is five seconds per test, and these are the handful that
+ * genuinely need longer: full DP sweeps and hundred-thousand-trial simulations.
+ * They pass in well under this on a quiet machine — the allowance is for a busy
+ * one, where forty test files share the cores and a correct test that happens
+ * to be slow starts failing for reasons that have nothing to do with it.
+ *
+ * Raised here rather than globally, so five seconds stays a real signal
+ * everywhere else.
+ */
+const SLOW = { timeout: 30_000 };
+
 describe('consolidated55', () => {
   it('is the official 55% consolidated featured rate', () => {
     expect(consolidated55.featuredChance(consolidated55.initial(false))).toBe(0.55);
@@ -201,7 +213,7 @@ describe('featuredCdf', () => {
 
 /** The condition ROADMAP names for this task: the DP and a simulation agree. */
 describe('DP agrees with Monte Carlo', () => {
-  it('matches a 100k seeded simulation within 0.5pp at ten checkpoints', () => {
+  it('matches a 100k seeded simulation within 0.5pp at ten checkpoints', SLOW, () => {
     const cases = [
       { pity: 0, guaranteed: false, copies: 1 },
       { pity: 22, guaranteed: false, copies: 1 },

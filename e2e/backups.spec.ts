@@ -237,6 +237,66 @@ test.describe('Backups', () => {
     await expect(page.getByRole('button', { name: 'Refresh wishes' })).toBeVisible();
   });
 
+  /**
+   * The panel's other half: where the data lives, not how to carry it.
+   *
+   * IndexedDB is best-effort by default — the browser may clear it to free
+   * space, and WebKit evicts origins nobody has opened lately. A player asking
+   * "will this still be here tomorrow" deserves an answer on the screen rather
+   * than a promise in a README.
+   */
+  test('says whether the browser intends to keep the data', async ({ page }) => {
+    await page.goto('/account');
+    await ready(page);
+
+    await expect(page.getByRole('heading', { name: 'On this device' })).toBeVisible();
+
+    // Headless Chromium has no engagement with the site, so it is best-effort
+    // and the offer to ask is there.
+    const ask = page.getByRole('button', { name: 'Keep my data on this device' });
+    await expect(ask).toBeVisible();
+    await expect(page.getByText(/allowed to clear it to free space/)).toBeVisible();
+
+    await ask.click();
+
+    /*
+      Chromium "automatically approve[s] or den[ies] the request" without a
+      prompt, and denies a site it has no history with — so what this checks is
+      that a refusal is reported as a refusal and points somewhere useful,
+      rather than leaving the button sitting there to be pressed again.
+    */
+    await expect(page.getByText(/turned the request down/)).toBeVisible();
+    await expect(page.getByText(/Home Screen/)).toBeVisible();
+    await expect(ask).toBeHidden();
+  });
+
+  test('says how much is stored, when the browser will say', async ({ page }) => {
+    await page.goto('/account');
+    await ready(page);
+
+    await expect(page.getByText(/stored, of the .* this browser allows/)).toBeVisible();
+  });
+
+  /**
+   * A backup is only reassuring if you know how old it is. The date is recorded
+   * rather than read back from the file, because the player keeps the file and
+   * Starfall never sees it again.
+   */
+  test('remembers when the last backup was taken', async ({ page }) => {
+    await page.goto('/account');
+    await ready(page);
+
+    await expect(page.getByText('You have not exported one yet.')).toBeVisible();
+
+    await exportBackup(page);
+    await expect(page.getByText('Last exported today.')).toBeVisible();
+
+    // And it survives the reload, which is the whole point of recording it.
+    await page.reload();
+    await ready(page);
+    await expect(page.getByText('Last exported today.')).toBeVisible();
+  });
+
   test('refuses a file that is not a backup, and says which way it is wrong', async ({ page }) => {
     await page.goto('/account');
     await ready(page);

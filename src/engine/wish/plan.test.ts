@@ -19,6 +19,18 @@ const previewInput = {
   enabled: {},
 };
 
+/**
+ * Vitest's default is five seconds per test, and these are the handful that
+ * genuinely need longer: full DP sweeps and hundred-thousand-trial simulations.
+ * They pass in well under this on a quiet machine — the allowance is for a busy
+ * one, where forty test files share the cores and a correct test that happens
+ * to be slow starts failing for reasons that have nothing to do with it.
+ *
+ * Raised here rather than globally, so five seconds stays a real signal
+ * everywhere else.
+ */
+const SLOW = { timeout: 30_000 };
+
 describe('computePlan', () => {
   it('reproduces the headline answer from the preview', () => {
     const result = computePlan(previewInput);
@@ -75,7 +87,7 @@ describe('computePlan', () => {
     expect(withIncome.pulls).toBe(14 + Math.floor((11_200 + 2_250) / 160));
   });
 
-  it('never reports a chance outside [0, 1]', () => {
+  it('never reports a chance outside [0, 1]', SLOW, () => {
     for (const constellation of [0, 1, 2, 3, 4, 5, 6]) {
       for (const pity of [0, 45, 89]) {
         for (const guaranteed of [false, true]) {

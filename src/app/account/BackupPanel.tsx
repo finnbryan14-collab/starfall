@@ -1,8 +1,9 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { exportBackup, restoreBackup } from '@/db/backup';
+import { db } from '@/db/schema';
 import {
   BACKUP_FAILURE_COPY,
   backupFilename,
@@ -11,16 +12,49 @@ import {
   type Backup,
   type BackupTable,
 } from '@/lib/backup';
+import { readOr } from '@/lib/storage';
 
+import { useStoragePersistence } from './useStoragePersistence';
 import styles from './HoyolabPanel.module.css';
 
 /**
- * Export and import everything as one JSON file.
+ * Where a player's data lives, and how to carry it somewhere else.
  *
- * There is no server, so this file is the only copy of a player's history that
- * outlives a cleared browser. Restoring replaces rather than merges, so it
- * always asks first and says exactly what it is about to replace.
+ * Two different questions, answered together because they are really one.
+ *
+ * Everything is in IndexedDB on this device, which survives closing the app but
+ * is *best-effort* by default: the browser may clear it to free space, and
+ * WebKit evicts origins nobody has opened lately. So the first half of this
+ * panel says where that stands and offers to ask for persistent mode.
+ *
+ * The second half is the file. There is no server, so a backup is the only copy
+ * that outlives a cleared browser or a lost phone — and it is the honest answer
+ * for anyone whose browser turned the request down. Restoring replaces rather
+ * than merges, so it always asks first and says what it is about to replace.
  */
+
+/** When the last backup was taken, so the panel can say how stale it is. */
+const LAST_BACKUP_KEY = 'last-backup-at';
+
+/** "3 days ago". Deliberately vague: the exact minute is never the question. */
+function howLongAgo(then: number, now = Date.now()): string {
+  const days = Math.floor((now - then) / 86_400_000);
+  if (days <= 0) return 'today';
+  if (days === 1) return 'yesterday';
+  if (days < 30) return `${days} days ago`;
+  const months = Math.round(days / 30);
+  return months === 1 ? 'a month ago' : `${months} months ago`;
+}
+
+/** "213 KB stored, of the 6.8 GB this browser allows." */
+function describeSpace(usage: number, quota: number): string {
+  const unit = (bytes: number) => {
+    if (bytes > 1e9) return `${(bytes / 1e9).toFixed(1)} GB`;
+    if (bytes > 1e6) return `${(bytes / 1e6).toFixed(1)} MB`;
+    return `${Math.max(1, Math.round(bytes / 1000))} KB`;
+  };
+  return `${unit(usage)} stored, of the ${unit(quota)} this browser allows.`;
+}
 
 type Status =
   | { kind: 'idle' }
@@ -30,7 +64,20 @@ type Status =
 
 export function BackupPanel() {
   const [status, setStatus] = useState<Status>({ kind: 'idle' });
+  const [lastBackup, setLastBackup] = useState<number | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  const storage = useStoragePersistence();
+
+  useEffect(() => {
+    let cancelled = false;
+    void readOr(() => db.settings.get(LAST_BACKUP_KEY), undefined).then((row) => {
+      if (cancelled) return;
+      if (typeof row?.value === 'number') setLastBackup(row.value);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const download = useCallback(async () => {
     const backup = await exportBackup();
@@ -42,6 +89,15 @@ export function BackupPanel() {
     link.download = backupFilename();
     link.click();
     URL.revokeObjectURL(url);
+
+    const at = Date.now();
+    // Recorded rather than inferred from the file: the player keeps the file,
+    // and Starfall never sees it again.
+    await readOr(
+      () => db.settings.put({ key: LAST_BACKUP_KEY, value: at, updatedAt: at }),
+      undefined,
+    );
+    setLastBackup(at);
 
     setStatus({ kind: 'done', message: `Saved ${backupFilename()}.` });
   }, []);
@@ -72,6 +128,25 @@ export function BackupPanel() {
 
   return (
     <>
+      <h2 className={styles.heading}>On this device</h2>
+      <p className={styles.body}>
+        {storage.loading ? 'Checking what this browser intends to keep…' : storage.advice.headline}
+      </p>
+
+      {storage.advice.canAsk ? (
+        <div className={styles.actions}>
+          <button type="button" className={styles.secondary} onClick={() => void storage.ask()}>
+            Keep my data on this device
+          </button>
+        </div>
+      ) : null}
+
+      {storage.advice.action ? <p className={styles.hint}>{storage.advice.action}</p> : null}
+
+      {storage.usage ? (
+        <p className={styles.hint}>{describeSpace(storage.usage.usage, storage.usage.quota)}</p>
+      ) : null}
+
       <h2 className={styles.heading}>Backups</h2>
       <p className={styles.body}>
         Everything Starfall knows, in one file. There is no server, so this is the only copy that
@@ -107,6 +182,12 @@ export function BackupPanel() {
           if (file) void pick(file);
         }}
       />
+
+      <p className={styles.hint}>
+        {lastBackup === null
+          ? 'You have not exported one yet.'
+          : `Last exported ${howLongAgo(lastBackup)}.`}
+      </p>
 
       <p className={styles.hint}>
         Your HoYoLAB cookie is deliberately left out — a backup is a file you email yourself, and

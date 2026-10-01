@@ -144,3 +144,26 @@ db.version(1).stores({
 ```
 
 Every table gets an `updatedAt`. Backups are a single JSON file of all tables plus a schema version.
+
+### Will it still be there tomorrow?
+
+IndexedDB survives closing the app, but by default it is **best-effort**: the browser may clear it to reclaim space, and WebKit also evicts an origin nobody has opened for a while. An origin can opt out, and then its data "is only evicted, or deleted, if the user chooses to, by using their browser's settings".
+
+Starfall asks for that, in two places, because the browsers disagree about whether asking is visible to the player:
+
+| Browser  | What `persist()` does                                                                |
+| -------- | ------------------------------------------------------------------------------------ |
+| Firefox  | shows a permission popup                                                             |
+| Chromium | decides silently on "importance": engagement, installed or bookmarked, notifications |
+| Safari   | decides silently on its own heuristics, including Home Screen Web App                |
+
+So `src/components/PersistentStorage.tsx` runs the **quiet** request on mount — it checks `navigator.permissions.query({ name: 'persistent-storage' })` first and only asks where the answer is already `granted`, or where the query is unsupported, which is Safari and Safari never prompts. web.dev says not to ask on page load precisely because of Firefox, and this is the narrow exception: on an iPhone there is no gesture to hang it on, so it happens there or not at all.
+
+The **loud** request is a button on the Account screen, under "On this device", which also says where things stand and how much is stored. A refusal is reported as a refusal, and points at installing the app — that is WebKit's own heuristic and one of Chrome's three.
+
+A backup is still the only thing that survives a lost phone, so the panel records when the last one was taken and says how long ago.
+
+- source: https://developer.mozilla.org/en-US/docs/Web/API/Storage_API/Storage_quotas_and_eviction_criteria
+- source: https://webkit.org/blog/14403/updates-to-storage-policy/
+- source: https://web.dev/articles/persistent-storage
+- verifiedAt: 2026-10-01

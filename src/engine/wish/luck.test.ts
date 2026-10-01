@@ -3,6 +3,18 @@ import { describe, expect, it } from 'vitest';
 import { expectedFiveStars, luckierThan, PULLS_PER_5STAR_SD, pullsForFiveStarsDist } from './luck';
 import { EXPECTED_PULLS_PER_5STAR, HARD_PITY, next5Dist } from './pity';
 
+/**
+ * Vitest's default is five seconds per test, and these are the handful that
+ * genuinely need longer: full DP sweeps and hundred-thousand-trial simulations.
+ * They pass in well under this on a quiet machine — the allowance is for a busy
+ * one, where forty test files share the cores and a correct test that happens
+ * to be slow starts failing for reasons that have nothing to do with it.
+ *
+ * Raised here rather than globally, so five seconds stays a real signal
+ * everywhere else.
+ */
+const SLOW = { timeout: 30_000 };
+
 describe('pullsForFiveStarsDist', () => {
   it('is the single-5★ distribution for one copy', () => {
     const single = next5Dist(0);
@@ -92,7 +104,7 @@ describe('luckierThan', () => {
    * approximation. The two have to agree either side of that line, or the
    * number a player sees would jump.
    */
-  it('hands over to the approximation without a jump', () => {
+  it('hands over to the approximation without a jump', SLOW, () => {
     const exact = luckierThan(150, Math.round(150 * EXPECTED_PULLS_PER_5STAR * 0.98))!;
     const approx = luckierThan(151, Math.round(151 * EXPECTED_PULLS_PER_5STAR * 0.98))!;
 

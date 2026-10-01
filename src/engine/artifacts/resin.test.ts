@@ -9,6 +9,18 @@ import {
 } from '@/engine/artifacts/resin';
 import { DEFAULT_GOAL } from '@/engine/artifacts/score';
 
+/**
+ * Vitest's default is five seconds per test, and these are the handful that
+ * genuinely need longer: full DP sweeps and hundred-thousand-trial simulations.
+ * They pass in well under this on a quiet machine — the allowance is for a busy
+ * one, where forty test files share the cores and a correct test that happens
+ * to be slow starts failing for reasons that have nothing to do with it.
+ *
+ * Raised here rather than globally, so five seconds stays a real signal
+ * everywhere else.
+ */
+const SLOW = { timeout: 30_000 };
+
 describe('runsForQuantile', () => {
   it('needs one run when every run succeeds', () => {
     expect(runsForQuantile(1, 0.5)).toBe(1);
@@ -41,7 +53,7 @@ describe('resinEstimate', () => {
   const sands = { slot: 'sands' as const, mainStat: 'atk_' as const, goal: DEFAULT_GOAL };
 
   /** ROADMAP: the sands example lands near 15,000 resin at the median. */
-  it('puts an on-set ATK% sands at 30+ crit value near 15,000 resin', () => {
+  it('puts an on-set ATK% sands at 30+ crit value near 15,000 resin', SLOW, () => {
     const estimate = resinEstimate(sands);
     expect(estimate.median.resin).toBeGreaterThan(13_000);
     expect(estimate.median.resin).toBeLessThan(17_000);
