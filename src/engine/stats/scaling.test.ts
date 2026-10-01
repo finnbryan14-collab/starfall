@@ -165,6 +165,7 @@ describe('characterBaseStats', () => {
     expect(stats.def).toBeCloseTo(68.21, 2);
     // Only the universal base, since Hu Tao's bonus stat is CRIT DMG.
     expect(stats.cd).toBeCloseTo(0.5, 10);
+    expect(stats.er).toBeCloseTo(1, 10);
   });
 
   /** Wiki, Hu Tao: 20/20 is 3,140.60 HP and 20/40 is 4,178.68. */
@@ -192,9 +193,10 @@ describe('characterBaseStats', () => {
     expect(stats.hp).toBeCloseTo(12_397.4, 1);
     expect(stats.atk).toBeCloseTo(191.16, 2);
     expect(stats.def).toBeCloseTo(771.25, 2);
-    // The wiki prints 26.68%, rounded up from its own source; the game data
-    // says 0.2667, and the character screen shows 26.7% either way.
-    expect(stats.er).toBeCloseTo(0.2667, 4);
+    // 100% base plus his ascension gain. The wiki's table prints 26.68%,
+    // rounded up from its own source; the game data says 0.2667, and his
+    // character screen reads 126.7% either way.
+    expect(stats.er).toBeCloseTo(1.2667, 4);
     // Crit is untouched, at the universal base.
     expect(stats.cr).toBeCloseTo(0.05, 10);
     expect(stats.cd).toBeCloseTo(0.5, 10);

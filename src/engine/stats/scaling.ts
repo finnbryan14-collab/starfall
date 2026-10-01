@@ -83,6 +83,23 @@ export const BASE_CRIT_RATE = 0.05;
 export const BASE_CRIT_DAMAGE = 0.5;
 
 /**
+ * And every character converts energy at 100% before any bonus.
+ *
+ * The wiki's conversion table is quoted "at 100% Energy Recharge" as the
+ * unbuffed reference, and the ascension tables list the gain on top of it —
+ * Bennett's column reads 26.7%, while his character screen reads 126.7%.
+ *
+ * Carried here so that `er` means the total, the way `cd` does. A player asking
+ * for "180% Energy Recharge" means the number on the screen, and a threshold
+ * measured against a bonus-only figure would be wrong by exactly 100%.
+ *
+ *   source: https://genshin-impact.fandom.com/wiki/Energy
+ *   source: https://genshin-impact.fandom.com/wiki/Energy_Recharge
+ *   verifiedAt: 2026-09-30
+ */
+export const BASE_ENERGY_RECHARGE = 1;
+
+/**
  * `base × curve[level]`.
  *
  * Throws on a level the curve does not cover and on a hole in the table. Both
@@ -138,10 +155,10 @@ export type BaseStats = { level: number; ascension: Ascension; stats: StatMap };
  * with level — a caller reading `stats.er` should not have to know that
  * Bennett only starts gaining it at phase 2.
  *
- * When the bonus stat is CRIT Rate or CRIT DMG it lands on top of the
- * universal base, which is what makes Hu Tao's 38.4% read as 88.4% on her
- * character screen. The wiki's ascension tables print the 38.4%; this returns
- * the 88.4%, because that is the number the damage formula wants.
+ * When the bonus stat is CRIT Rate, CRIT DMG or Energy Recharge it lands on top
+ * of the universal base, which is what makes Hu Tao's 38.4% read as 88.4% on
+ * her character screen. The wiki's ascension tables print the 38.4%; this
+ * returns the 88.4%, because that is the number the damage formula wants.
  */
 export function characterBaseStats(
   scaling: CharacterScaling,
@@ -157,6 +174,7 @@ export function characterBaseStats(
     def: scaleStat(scaling.base.def, scaling.curve.def, level) + step.def,
     cr: BASE_CRIT_RATE,
     cd: BASE_CRIT_DAMAGE,
+    er: BASE_ENERGY_RECHARGE,
   };
 
   stats[scaling.bonusStat] = (stats[scaling.bonusStat] ?? 0) + step.bonus;

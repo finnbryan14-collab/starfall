@@ -55,7 +55,8 @@ describe('characters-generated', () => {
     expect(stats.hp).toBeCloseTo(12_397.4, 1);
     expect(stats.atk).toBeCloseTo(191.16, 2);
     expect(stats.def).toBeCloseTo(771.25, 2);
-    expect(stats.er).toBeCloseTo(0.2667, 4);
+    // 100% base plus his 26.67% ascension gain.
+    expect(stats.er).toBeCloseTo(1.2667, 4);
   });
 
   it('scales every character at every level without a hole', () => {

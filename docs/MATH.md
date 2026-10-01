@@ -392,6 +392,46 @@ Saying so is the difference between a calculator that is wrong and one that is i
 
 ---
 
+## 9. Searching the bag
+
+Which five artifacts hit hardest. Branch and bound, and the bound is where all the work is.
+
+### Why pruning is allowed at all
+
+Outgoing damage is **monotonically non-decreasing in every stat an artifact can carry**. More ATK%, more CRIT Rate, more Elemental Mastery, more elemental DMG bonus: none of them can make a hit weaker. Section 6 asserts that in `formula.test.ts`, and it is what makes this a search rather than a heuristic.
+
+So for any partial choice of artifacts, take the best each remaining slot could offer **one stat at a time** — ignoring entirely whether any single piece could really provide all of them at once — and add the most generous set bonus any set offers. That gives a figure no real completion can beat. If the optimistic figure loses to what has already been found, the whole branch goes.
+
+`search.test.ts` generates a bag from a seeded RNG, searches it, then evaluates every combination one at a time and compares. Pruning is only allowed if it cannot change the answer, so that test is the obligation rather than a nicety.
+
+### Why it is not five independent choices
+
+Set bonuses. Two Crimson Witch pieces are worth 15% Pyro DMG, which can beat two individually better pieces from different sets. That coupling is what makes the problem a search.
+
+### What it costs
+
+A 400-artifact bag is about eighty per slot: **3.3 billion combinations**. Measured across three generated bags of that size:
+
+| Bag | Nodes visited | Complete builds scored | Time | Proven optimal |
+| --- | ------------- | ---------------------- | ---- | -------------- |
+| 400 | 1.8M          | 552                    | 68ms | yes            |
+| 400 | 1.1M          | 5,080                  | 88ms | yes            |
+| 400 | 17.6M         | 6,681                  | 1.2s | yes            |
+| 800 | 42.6M         | 629                    | 3.0s | yes            |
+| 800 | 104.9M        | 12,665                 | 7.5s | yes            |
+
+A few thousand complete builds out of 3.3 billion. The node budget is 200 million — roughly ten times the hardest realistic bag — and past it the search stops and reports `exhaustive: false`, which makes its answer the best _found_ rather than the best there is. Saying so beats running until the tab dies.
+
+The inner loop runs on `Float64Array`s of eleven numbers with the accumulator reused down the stack, because at tens of millions of nodes an object allocation per node would dominate everything else.
+
+### Constraints
+
+An Energy Recharge floor is the one constraint that changes an answer, because a burst that does not come back does no damage at all. It is measured against the figure on the character screen — 100% before any artifact — so 180% means what a player means by it.
+
+The bound covers it too: if the optimistic Energy Recharge of a partial build cannot reach the floor, the branch goes. When nothing can meet it the search returns empty rather than quietly dropping the constraint.
+
+---
+
 ## Sources
 
 - Pity and consolidated rates: https://news.bittopup.com/news/genshin-impact-pity-system-guide-90-pull-guarantee-50-50

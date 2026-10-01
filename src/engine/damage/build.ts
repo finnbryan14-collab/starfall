@@ -1,4 +1,4 @@
-import type { MainStatKey, Substats } from '../artifacts/model';
+import type { MainStatKey, Slot, Substats } from '../artifacts/model';
 import { addStats, fromArtifactValue, type StatMap } from '../stats/scaling';
 import { outgoingDamage, type CritMode, type DamageResult, type Reaction } from './formula';
 
@@ -48,6 +48,8 @@ export type TalentHit = { label: string; parts: readonly TalentPart[] };
 
 /** An equipped artifact, in the artifact model's units — 46.6 meaning 46.6%. */
 export type EquippedArtifact = {
+  /** Which of the five it fills. Assembling stats does not care; searching does. */
+  slotKey: Slot;
   setKey: string;
   mainStat: MainStatKey;
   mainValue: number;

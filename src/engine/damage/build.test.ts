@@ -30,6 +30,7 @@ const HOMA_90 = { atk: 608.07, cd: 0.662 };
 
 /** One ATK% sands, at the 5-star maximum. */
 const ATK_SANDS = {
+  slotKey: 'sands' as const,
   setKey: 'CrimsonWitchOfFlames',
   mainStat: 'atk_' as const,
   mainValue: 46.6,
@@ -37,6 +38,7 @@ const ATK_SANDS = {
 };
 /** One flat-ATK plume, at the 5-star maximum. */
 const ATK_PLUME = {
+  slotKey: 'plume' as const,
   setKey: 'CrimsonWitchOfFlames',
   mainStat: 'atk' as const,
   mainValue: 311,

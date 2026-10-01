@@ -1,6 +1,12 @@
 import { z } from 'zod';
 
-import type { MainStatKey, Slot, SubstatKey, Substats } from '@/engine/artifacts/model';
+import {
+  SLOT_ORDER,
+  type MainStatKey,
+  type Slot,
+  type SubstatKey,
+  type Substats,
+} from '@/engine/artifacts/model';
 
 /**
  * GOOD inventory import.
@@ -58,8 +64,6 @@ export const GOOD_MAIN_STAT_KEYS: Record<string, MainStatKey> = {
   dendro_dmg_: 'dendro_dmg',
   heal_: 'heal',
 };
-
-const SLOTS: readonly Slot[] = ['flower', 'plume', 'sands', 'goblet', 'circlet'];
 
 const goodSubstat = z.object({
   key: z.string(),
@@ -350,7 +354,7 @@ export function describeGood(counts: GoodCounts): string {
 
 /** Every slot, so the confirm step can show a file missing a whole slot. */
 export function countBySlot(artifacts: readonly ImportedArtifact[]): Record<Slot, number> {
-  const counts = Object.fromEntries(SLOTS.map((slot) => [slot, 0])) as Record<Slot, number>;
+  const counts = Object.fromEntries(SLOT_ORDER.map((slot) => [slot, 0])) as Record<Slot, number>;
   for (const artifact of artifacts) counts[artifact.slotKey] += 1;
   return counts;
 }

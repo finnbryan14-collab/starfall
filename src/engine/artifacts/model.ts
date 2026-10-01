@@ -17,6 +17,14 @@ import { randomInt, type Rng } from '../rng';
 
 export type Slot = 'flower' | 'plume' | 'sands' | 'goblet' | 'circlet';
 
+/**
+ * The slots, in the order the game shows them.
+ *
+ * Exported because four different places were keeping their own copy, and the
+ * order is load-bearing: a build needs one of each, and the roster sorts by it.
+ */
+export const SLOT_ORDER: readonly Slot[] = ['flower', 'plume', 'sands', 'goblet', 'circlet'];
+
 /** Stats that can appear as a substat. */
 export type SubstatKey = 'hp' | 'atk' | 'def' | 'hp_' | 'atk_' | 'def_' | 'er' | 'em' | 'cr' | 'cd';
 

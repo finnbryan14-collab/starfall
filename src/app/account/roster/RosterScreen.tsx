@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import screen from '@/components/screen.module.css';
 import { listArtifacts } from '@/db/artifacts';
+import { SLOT_ORDER } from '@/engine/artifacts/model';
 import { listRoster } from '@/db/roster';
 import type { ImportedArtifact, ImportedCharacter } from '@/lib/good';
 import { readableKey } from '@/lib/good';
@@ -23,8 +24,6 @@ import styles from './RosterScreen.module.css';
  */
 
 type Tab = 'characters' | 'artifacts';
-
-const SLOT_ORDER = ['flower', 'plume', 'sands', 'goblet', 'circlet'] as const;
 
 export function RosterScreen() {
   const [characters, setCharacters] = useState<ImportedCharacter[]>([]);

@@ -15,7 +15,8 @@ import { WEAPONS, weaponScaling } from './weapons-generated';
 
 /** Five pieces of one set, which is how a real build usually looks. */
 function pieces(setKey: string, count: number): EquippedArtifact[] {
-  return Array.from({ length: count }, () => ({
+  return Array.from({ length: count }, (_, index) => ({
+    slotKey: (['flower', 'plume', 'sands', 'goblet', 'circlet'] as const)[index % 5],
     setKey,
     mainStat: 'atk_' as const,
     mainValue: 0,
@@ -141,16 +142,41 @@ describe('a whole build, end to end', () => {
     const weapon = weaponBaseStats(weaponScaling(WEAPONS.StaffOfHoma), 90, 6);
 
     const artifacts: EquippedArtifact[] = [
-      { setKey: 'CrimsonWitchOfFlames', mainStat: 'hp', mainValue: 4780, substats: { cr: 7.8 } },
-      { setKey: 'CrimsonWitchOfFlames', mainStat: 'atk', mainValue: 311, substats: { cd: 21.8 } },
-      { setKey: 'CrimsonWitchOfFlames', mainStat: 'hp_', mainValue: 46.6, substats: { cr: 7.8 } },
       {
+        slotKey: 'flower',
+        setKey: 'CrimsonWitchOfFlames',
+        mainStat: 'hp',
+        mainValue: 4780,
+        substats: { cr: 7.8 },
+      },
+      {
+        slotKey: 'plume',
+        setKey: 'CrimsonWitchOfFlames',
+        mainStat: 'atk',
+        mainValue: 311,
+        substats: { cd: 21.8 },
+      },
+      {
+        slotKey: 'sands',
+        setKey: 'CrimsonWitchOfFlames',
+        mainStat: 'hp_',
+        mainValue: 46.6,
+        substats: { cr: 7.8 },
+      },
+      {
+        slotKey: 'goblet',
         setKey: 'CrimsonWitchOfFlames',
         mainStat: 'pyro_dmg',
         mainValue: 46.6,
         substats: { cd: 14.6 },
       },
-      { setKey: 'ShimenawasReminiscence', mainStat: 'cd', mainValue: 62.2, substats: { cr: 3.9 } },
+      {
+        slotKey: 'circlet',
+        setKey: 'ShimenawasReminiscence',
+        mainStat: 'cd',
+        mainValue: 62.2,
+        substats: { cr: 3.9 },
+      },
     ];
 
     const sets = resolveSetBonuses(activeSets(artifacts));

@@ -3,7 +3,7 @@ import path from 'node:path';
 import { defineConfig } from 'vitest/config';
 
 /**
- * Performance budget run: perf.test.ts only, on its own.
+ * Performance budget run: the perf.test.ts files only, on their own.
  *
  * The absolute timings in that file measure whether the engine can meet SPEC's
  * 50ms input-change budget. Run inside the full suite they instead measure
@@ -17,7 +17,7 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     environment: 'node',
-    include: ['src/engine/wish/perf.test.ts'],
+    include: ['src/engine/wish/perf.test.ts', 'src/engine/damage/perf.test.ts'],
     env: { PERF: '1' },
     fileParallelism: false,
   },

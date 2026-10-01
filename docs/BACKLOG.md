@@ -14,7 +14,7 @@ Ideas from planning, not scheduled. Pull into ROADMAP.md when v1 ships.
 
 ## Artifacts and builds
 
-- **Build optimizer:** the damage formula (`src/engine/damage/`) and the stat layer (`src/engine/stats/`, `src/data/*-generated.ts`, `public/data/talents/`) are in. Still to come: the artifact search itself, and a buff panel for team effects as explicit inputs.
+- **Build optimizer:** the engine is in — the damage formula, the stat layer, the generated game data, build assembly and the branch-and-bound search (`src/engine/damage/search.ts`, proven optimal, 68ms to 1.2s on a 400-artifact bag). Still to come: the screen, a Comlink worker to run the search off the main thread, and a buff panel for team effects as explicit inputs.
 - **Sanctifying Elixir vs. domain farming** comparison.
 - **"Level to +8, then decide"** flow that remembers the piece and re-scores it.
 - Pick artifacts from the imported GOOD inventory instead of manual entry.
