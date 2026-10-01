@@ -1,4 +1,5 @@
 import { Nav } from '@/components/Nav';
+import { SkyCanvas } from '@/components/SkyCanvas';
 import { Starfield } from '@/components/Starfield';
 import { StorageNotice } from '@/components/StorageNotice';
 
@@ -12,6 +13,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Starfield />
+      <SkyCanvas />
 
       <div className={styles.app}>
         <header className={styles.top}>

@@ -1,0 +1,21 @@
+/*
+  Sits exactly where the SVG sky sits, one layer in front of it.
+
+  Both are behind everything else and neither takes a pointer event. The fade
+  is what makes the canvas arrive rather than cut — until `data-ready` is set it
+  is invisible, so a slow renderer shows nothing instead of a black rectangle.
+*/
+.sky {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--d-signature) ease-out;
+}
+
+.sky[data-ready='true'] {
+  opacity: 1;
+}
