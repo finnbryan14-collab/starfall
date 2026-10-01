@@ -95,6 +95,44 @@ export const AMPLIFYING_COEFFICIENTS = {
   vaporizePyro: 1.5,
 } as const;
 
+/**
+ * Which amplifying reactions a hit of this element can trigger, and for how much.
+ *
+ * The coefficient depends on which element *triggers*, not on which reaction it
+ * is, so the same reaction is worth different amounts to different characters:
+ * a Pyro hit onto a Hydro aura vaporises for 1.5, while a Hydro hit onto a Pyro
+ * aura vaporises for 2.0. Offering a player "Vaporize" without saying which
+ * side they are on would be a 33% error waiting to happen.
+ *
+ * Anemo, Geo, Dendro, Electro and Physical hits trigger neither, so they get an
+ * empty list rather than a choice that does nothing.
+ */
+export function amplifyingFor(
+  element: string | null,
+): { id: 'vaporize' | 'melt'; label: string; coefficient: number }[] {
+  switch (element) {
+    case 'pyro':
+      return [
+        { id: 'vaporize', label: 'Vaporize, onto Hydro', coefficient: 1.5 },
+        { id: 'melt', label: 'Melt, onto Cryo', coefficient: AMPLIFYING_COEFFICIENTS.meltPyro },
+      ];
+    case 'hydro':
+      return [
+        {
+          id: 'vaporize',
+          label: 'Vaporize, onto Pyro',
+          coefficient: AMPLIFYING_COEFFICIENTS.vaporizeHydro,
+        },
+      ];
+    case 'cryo':
+      return [
+        { id: 'melt', label: 'Melt, onto Pyro', coefficient: AMPLIFYING_COEFFICIENTS.meltCryo },
+      ];
+    default:
+      return [];
+  }
+}
+
 /** `2.78 × EM / (EM + 1400)` — sharply diminishing, which is why EM stacking stops. */
 export function amplifyingEmBonus(elementalMastery: number): number {
   const em = Math.max(0, elementalMastery);

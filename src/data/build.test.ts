@@ -9,7 +9,7 @@ import {
 import { characterBaseStats, weaponBaseStats } from '@/engine/stats/scaling';
 
 import { ARTIFACT_SETS } from './artifact-sets-generated';
-import { activeSets, resolveSetBonuses } from './build';
+import { activeSets, equip, equipAll, resolveSetBonuses, searchSets } from './build';
 import { CHARACTERS, characterScaling } from './characters-generated';
 import { WEAPONS, weaponScaling } from './weapons-generated';
 
@@ -126,6 +126,100 @@ describe('resolveSetBonuses', () => {
 
   it('has nothing to raise for a set that is fully modelled', () => {
     expect(resolveSetBonuses({ CrimsonWitchOfFlames: 2 }).unmodelled).toEqual([]);
+  });
+});
+
+describe('equip', () => {
+  /**
+   * The value a GOOD export does not carry. 5-star CRIT DMG at +20 is 62.2% and
+   * at +0 is 9.3%, which the wiki prints as its range.
+   */
+  it('derives the main stat value from rarity and level', () => {
+    const base = {
+      id: 'good-0',
+      setKey: 'CrimsonWitchOfFlames',
+      slotKey: 'circlet' as const,
+      location: '',
+      mainStat: 'cd' as const,
+      substats: {},
+      lock: false,
+    };
+
+    expect(equip({ ...base, rarity: 5, level: 20 })?.mainValue).toBeCloseTo(62.2, 3);
+    expect(equip({ ...base, rarity: 5, level: 0 })?.mainValue).toBeCloseTo(9.3, 3);
+    // A 4-star circlet maxes at +16 and a lower figure.
+    expect(equip({ ...base, rarity: 4, level: 16 })?.mainValue).toBeLessThan(62.2);
+  });
+
+  it('clamps a level the rarity cannot reach rather than dropping the piece', () => {
+    const piece = equip({
+      id: 'good-1',
+      setKey: 'CrimsonWitchOfFlames',
+      slotKey: 'circlet',
+      location: '',
+      rarity: 4,
+      // A scanner misreading +16 as +20 should not lose the artifact.
+      level: 20,
+      mainStat: 'cd',
+      substats: {},
+      lock: false,
+    });
+
+    expect(piece?.mainValue).toBeGreaterThan(0);
+  });
+
+  /**
+   * Flat DEF is a substat and never a main stat, so there is no value to
+   * derive. Inventing one would hand the optimiser a piece that cannot exist.
+   */
+  it('leaves out a piece whose main stat is not a main stat', () => {
+    const impossible = {
+      id: 'good-2',
+      setKey: 'Adventurer',
+      slotKey: 'sands' as const,
+      location: '',
+      rarity: 5,
+      level: 20,
+      mainStat: 'def' as const,
+      substats: {},
+      lock: false,
+    };
+
+    expect(equip(impossible)).toBeNull();
+    expect(equipAll([impossible])).toEqual([]);
+  });
+
+  it('carries the substats through untouched, in the units they arrived in', () => {
+    const piece = equip({
+      id: 'good-3',
+      setKey: 'CrimsonWitchOfFlames',
+      slotKey: 'flower',
+      location: '',
+      rarity: 5,
+      level: 20,
+      mainStat: 'hp',
+      substats: { cr: 7.8, cd: 21.8 },
+      lock: false,
+    });
+
+    expect(piece?.substats).toEqual({ cr: 7.8, cd: 21.8 });
+    expect(piece?.mainValue).toBe(4780);
+  });
+});
+
+describe('searchSets', () => {
+  it('reduces a hit bonus to the amount this hit actually gets', () => {
+    const forBurst = searchSets('burst');
+    const forSkill = searchSets('skill');
+    const noblesse = (sets: ReturnType<typeof searchSets>) =>
+      sets.find((set) => set.key === 'NoblesseOblige');
+
+    expect(noblesse(forBurst)?.hitBonus).toBeCloseTo(0.2, 6);
+    expect(noblesse(forSkill)?.hitBonus).toBe(0);
+  });
+
+  it('describes every set, so the search never meets an unknown one', () => {
+    expect(searchSets('skill')).toHaveLength(Object.keys(ARTIFACT_SETS).length);
   });
 });
 

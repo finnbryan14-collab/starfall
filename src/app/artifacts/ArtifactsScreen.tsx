@@ -22,6 +22,7 @@ import { DEFAULT_TRIALS, VERDICT_COPY, type Goal } from '@/engine/artifacts/scor
 import { WEIGHT_PRESETS, presetById } from '@/engine/artifacts/weights';
 import { mulberry32 } from '@/engine/rng';
 import { formatNumber } from '@/lib/format';
+import { STAT_NAMES as MAIN_STAT_NAMES } from '@/lib/stats';
 import { duration, useReducedMotion } from '@/motion';
 import { useArtifacts } from '@/workers/useArtifacts';
 
@@ -42,28 +43,6 @@ const SLOTS: { value: Slot; label: string }[] = [
   { value: 'goblet', label: 'Goblet' },
   { value: 'circlet', label: 'Circlet' },
 ];
-
-const MAIN_STAT_NAMES: Record<string, string> = {
-  hp: 'HP',
-  atk: 'ATK',
-  def: 'DEF',
-  hp_: 'HP%',
-  atk_: 'ATK%',
-  def_: 'DEF%',
-  er: 'Energy Recharge',
-  em: 'Elemental Mastery',
-  cr: 'CRIT Rate',
-  cd: 'CRIT DMG',
-  heal: 'Healing Bonus',
-  pyro_dmg: 'Pyro DMG',
-  hydro_dmg: 'Hydro DMG',
-  electro_dmg: 'Electro DMG',
-  cryo_dmg: 'Cryo DMG',
-  anemo_dmg: 'Anemo DMG',
-  geo_dmg: 'Geo DMG',
-  dendro_dmg: 'Dendro DMG',
-  physical_dmg: 'Physical DMG',
-};
 
 type Line = { key: SubstatKey | ''; value: number };
 

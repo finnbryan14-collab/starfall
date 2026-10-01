@@ -1,6 +1,7 @@
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { createRequire } from 'node:module';
+import { readFile } from 'node:fs/promises';
 
 /**
  * Generates the game data the damage engine needs.
@@ -46,11 +47,15 @@ const require = createRequire(import.meta.url);
 const GO_CONSTS =
   'https://raw.githubusercontent.com/frzyc/genshin-optimizer/master/libs/gi/consts/src';
 const GENSHIN_DB_DATA = 'genshin-db/src/min/data.min.json';
+const GO_STATS =
+  'https://raw.githubusercontent.com/frzyc/genshin-optimizer/master/libs/gi/stats/src/allStat_gen.json';
 
 const OUT_CHARACTERS = path.join(process.cwd(), 'src', 'data', 'characters-generated.ts');
 const OUT_WEAPONS = path.join(process.cwd(), 'src', 'data', 'weapons-generated.ts');
 const OUT_SETS = path.join(process.cwd(), 'src', 'data', 'artifact-sets-generated.ts');
+const OUT_ARTIFACT_STATS = path.join(process.cwd(), 'src', 'data', 'artifact-stats-generated.ts');
 const OUT_TALENTS = path.join(process.cwd(), 'public', 'data', 'talents');
+const ARTIFACT_MODEL = path.join(process.cwd(), 'src', 'engine', 'artifacts', 'model.ts');
 
 /** Levels the game now allows. Characters reach 100; no weapon passes 90. */
 const MAX_CHARACTER_LEVEL = 100;
@@ -182,6 +187,33 @@ function keyArray(source: string, name: string): string[] {
   return keys;
 }
 
+/**
+ * Our own substat table, read out of the engine source.
+ *
+ * Read textually rather than imported: `model.ts` imports `../rng` without a
+ * file extension, which Node's ESM loader will not resolve from a script.
+ * build-banners.mts reads the generated Enka map the same way.
+ *
+ * The point is to compare what Starfall ships against the game's own data, so
+ * a copy of the values here would defeat it.
+ */
+async function ourSubstats(): Promise<Record<string, { max: number; isPercent: boolean }>> {
+  const source = await readFile(ARTIFACT_MODEL, 'utf8');
+  const entries = [
+    ...source.matchAll(
+      /(\w+): \{ weight: [\d.]+, max: ([\d.]+), name: '[^']*', isPercent: (true|false) \}/g,
+    ),
+  ];
+
+  if (entries.length < 10) {
+    throw new Error(`read ${entries.length} substats out of model.ts — its shape has changed`);
+  }
+
+  return Object.fromEntries(
+    entries.map((match) => [match[1], { max: Number(match[2]), isPercent: match[3] === 'true' }]),
+  );
+}
+
 async function fetchText(url: string): Promise<string> {
   const response = await fetch(url);
   if (!response.ok) throw new Error(`${url} returned ${response.status}`);
@@ -237,6 +269,72 @@ function curveTable(
 
   return table;
 }
+
+// ---------------------------------------------------------------------------
+// Artifact main stats
+// ---------------------------------------------------------------------------
+
+/**
+ * genshin-optimizer's stat keys against ours.
+ *
+ * Theirs suffix percentages with `_`, the same convention GOOD uses. Mapped
+ * explicitly so a key they add shows up as an error rather than being dropped.
+ */
+const GO_STAT_KEYS: Record<string, string> = {
+  hp: 'hp',
+  hp_: 'hp_',
+  atk: 'atk',
+  atk_: 'atk_',
+  def: 'def',
+  def_: 'def_',
+  critRate_: 'cr',
+  critDMG_: 'cd',
+  eleMas: 'em',
+  enerRech_: 'er',
+  heal_: 'heal',
+  physical_dmg_: 'physical_dmg',
+  electro_dmg_: 'electro_dmg',
+  geo_dmg_: 'geo_dmg',
+  pyro_dmg_: 'pyro_dmg',
+  hydro_dmg_: 'hydro_dmg',
+  cryo_dmg_: 'cryo_dmg',
+  anemo_dmg_: 'anemo_dmg',
+  dendro_dmg_: 'dendro_dmg',
+};
+
+/** Flat stats. Everything else is a percentage, stored in points. */
+const FLAT_STATS = new Set(['hp', 'atk', 'def', 'em']);
+
+/**
+ * The wiki's published ranges for a 5-star piece, at +0 and +20.
+ *
+ * Checked against the generated table rather than trusted alongside it: these
+ * values decide a goblet's elemental bonus and a circlet's CRIT DMG, which are
+ * most of what an optimiser is choosing between.
+ *
+ *   source: https://genshin-impact.fandom.com/wiki/Artifact/Stats
+ *   verifiedAt: 2026-09-30
+ */
+const PUBLISHED_FIVE_STAR: Record<string, [number, number]> = {
+  hp: [717, 4780],
+  atk: [47, 311],
+  hp_: [7.0, 46.6],
+  atk_: [7.0, 46.6],
+  def_: [8.7, 58.3],
+  em: [28, 186.5],
+  er: [7.8, 51.8],
+  cr: [4.7, 31.1],
+  cd: [9.3, 62.2],
+  heal: [5.4, 35.9],
+  pyro_dmg: [7.0, 46.6],
+};
+
+type GoStats = {
+  art: {
+    main: Record<string, Record<string, number[]>>;
+    sub: Record<string, Record<string, number[]>>;
+  };
+};
 
 // ---------------------------------------------------------------------------
 // Artifact sets
@@ -502,6 +600,7 @@ async function main(): Promise<void> {
 
   const unlisted: string[] = [];
   const elementless: string[] = [];
+  let substatsChecked = 0;
 
   // --- characters ---------------------------------------------------------
 
@@ -638,6 +737,71 @@ async function main(): Promise<void> {
   }
 
   weapons.sort((a, b) => a.key.localeCompare(b.key));
+
+  // --- artifact main stats -----------------------------------------------
+
+  const goStats = JSON.parse(await fetchText(GO_STATS)) as GoStats;
+
+  const mainStats: Record<string, Record<string, number[]>> = {};
+  const unmappedStats = new Set<string>();
+
+  for (const [rarity, byStat] of Object.entries(goStats.art.main)) {
+    const emitted: Record<string, number[]> = {};
+    for (const [goKey, values] of Object.entries(byStat)) {
+      const key = GO_STAT_KEYS[goKey];
+      if (!key) {
+        unmappedStats.add(goKey);
+        continue;
+      }
+      // Theirs are fractions; ours are the units a GOOD export uses, which is
+      // percentage points for a percentage and the raw figure for a flat stat.
+      const scale = FLAT_STATS.has(key) ? 1 : 100;
+      emitted[key] = values.map((value) => Math.round(value * scale * 1e4) / 1e4);
+    }
+    mainStats[rarity] = emitted;
+  }
+
+  if (unmappedStats.size > 0) {
+    throw new Error(`unmapped artifact stat key(s): ${[...unmappedStats].join(', ')}`);
+  }
+
+  // Checked against the wiki's own printed range, at both ends.
+  for (const [key, [atZero, atTwenty]] of Object.entries(PUBLISHED_FIVE_STAR)) {
+    const values = mainStats['5'][key];
+    if (!values) throw new Error(`no 5-star main stat values for ${key}`);
+    if (values.length !== 21) {
+      throw new Error(`${key} has ${values.length} levels, expected 21`);
+    }
+    for (const [level, expected] of [
+      [0, atZero],
+      [20, atTwenty],
+    ] as const) {
+      if (Math.abs(values[level] - expected) > 0.05) {
+        throw new Error(
+          `5-star ${key} at +${level} is ${values[level]}, the wiki prints ${expected}`,
+        );
+      }
+    }
+  }
+
+  /*
+    And while the substat table is here, check the one we already ship against
+    it. SUBSTATS has been in src/engine since the scorer was written, with its
+    values taken from the wiki; agreeing with the game's own data is worth
+    knowing, and a silent drift in either would change every artifact score.
+  */
+  const ourSubs = await ourSubstats();
+  const theirSubs = goStats.art.sub['5'];
+  for (const [goKey, rolls] of Object.entries(theirSubs)) {
+    const key = GO_STAT_KEYS[goKey];
+    const ours = key ? ourSubs[key] : undefined;
+    if (!ours) continue;
+    const theirMax = rolls[rolls.length - 1] * (ours.isPercent ? 100 : 1);
+    if (Math.abs(theirMax - ours.max) > 0.01) {
+      throw new Error(`substat ${key}: we say ${ours.max}, the game data says ${theirMax}`);
+    }
+    substatsChecked += 1;
+  }
 
   // --- artifact sets -----------------------------------------------------
 
@@ -926,7 +1090,63 @@ async function main(): Promise<void> {
     'utf8',
   );
 
+  await writeFile(
+    OUT_ARTIFACT_STATS,
+    [
+      header(`genshin-optimizer's generated game data, cross-checked against the wiki`),
+      '/**',
+      ' * What an artifact main stat is worth, by rarity and level.',
+      ' *',
+      " * In the artifact model's units: percentage points for a percentage, the",
+      ' * raw figure for flat HP, ATK, DEF and Elemental Mastery — the same units a',
+      ' * GOOD export uses for a substat, so one conversion covers both.',
+      ' *',
+      ' * A GOOD export carries the main stat *key* but not its value, because the',
+      ' * game derives it from rarity and level. This is that derivation.',
+      ' *',
+      ' * Not linear: a 5-star ATK% goblet runs 7.0, 9.0, 11.0, 12.9, 14.9 — the step',
+      ' * drifts between 1.9 and 2.0, so interpolating the published endpoints would',
+      ' * be wrong everywhere in between.',
+      ' */',
+      'export const ARTIFACT_MAIN_STATS: Record<string, Record<string, readonly number[]>> = {',
+      ...Object.entries(mainStats).map(([rarity, byStat]) => `  ${rarity}: ${line(byStat)},`),
+      '};',
+      '',
+      '/** The highest level each rarity can reach. */',
+      `export const ARTIFACT_MAX_LEVEL: Record<string, number> = ${line(
+        Object.fromEntries(
+          Object.entries(mainStats).map(([rarity, byStat]) => [
+            rarity,
+            (byStat.hp?.length ?? 1) - 1,
+          ]),
+        ),
+      )};`,
+      '',
+      '/**',
+      ' * The value of one main stat, or null when that rarity cannot roll it.',
+      ' *',
+      ' * Clamps the level rather than throwing: a scanner can report a level above',
+      ' * what the rarity allows, and showing the piece at its cap beats dropping it.',
+      ' */',
+      'export function mainStatValue(',
+      '  rarity: number,',
+      '  key: string,',
+      '  level: number,',
+      '): number | null {',
+      '  const values = ARTIFACT_MAIN_STATS[String(rarity)]?.[key];',
+      '  if (!values) return null;',
+      '  const at = Math.min(values.length - 1, Math.max(0, Math.trunc(level)));',
+      '  return values[at];',
+      '}',
+      '',
+    ].join('\n'),
+    'utf8',
+  );
+
   console.log(`characters: ${characters.length}, weapons: ${weapons.length}, talent hits: ${hits}`);
+  console.log(
+    `artifact main stats: ${Object.keys(mainStats).length} rarities, ${substatsChecked} substats agreed with ours`,
+  );
   console.log(`artifact sets: ${sets.length}`);
   console.log(`cross-checked ${checked.toLocaleString('en-US')} character and weapon stat rows`);
 

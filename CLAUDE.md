@@ -52,7 +52,8 @@ pnpm lint         # ESLint + Prettier check
 pnpm format       # Prettier write
 pnpm typecheck    # tsc --noEmit
 pnpm perf         # engine performance budget, run isolated
-pnpm build:data   # regenerate src/data/enka-map.ts from Enka store files
+pnpm build:data   # regenerate everything in src/data/ and public/data/
+pnpm build:game-data # just the characters, weapons, artifact sets and talents
 pnpm build        # production build
 ```
 

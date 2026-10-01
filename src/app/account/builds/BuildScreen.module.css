@@ -1,0 +1,129 @@
+.back {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  color: var(--gold);
+  font-size: var(--t-sm);
+  text-decoration: none;
+}
+
+.back:hover {
+  text-decoration: underline;
+}
+
+.empty {
+  color: var(--dim);
+  margin: var(--s-4) 0 0;
+  max-width: 46ch;
+}
+
+.label {
+  display: block;
+  margin-top: var(--s-4);
+  color: var(--dim);
+  font-size: var(--t-sm);
+}
+
+.select {
+  width: 100%;
+  min-height: var(--tap);
+  margin-top: var(--s-2);
+  background: var(--well);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-input);
+  padding: 0 12px;
+  color: inherit;
+  font: inherit;
+}
+
+.select:disabled {
+  color: var(--faint);
+}
+
+.disclosure {
+  margin-top: var(--s-5);
+  border-top: 1px solid var(--rule);
+}
+
+.summary {
+  min-height: var(--tap);
+  display: flex;
+  align-items: center;
+  color: var(--starlight);
+  cursor: pointer;
+}
+
+.explain {
+  margin: 0 0 var(--s-3);
+  color: var(--faint);
+  font-size: var(--t-xs);
+  line-height: 1.45;
+  max-width: 52ch;
+}
+
+.pieces,
+.unmodelled {
+  margin: var(--s-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/*
+  Four lines per piece rather than a tidy grid of five identical cards: the set
+  and the main stat are what a player reads, and the substats are why it won.
+*/
+.piece {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 1px var(--s-3);
+  padding: var(--s-3) 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.pieceName {
+  color: var(--starlight);
+  font-weight: 600;
+}
+
+.pieceSlot {
+  color: var(--dim);
+  text-align: right;
+}
+
+.pieceMain {
+  grid-column: 1 / -1;
+  color: var(--gold);
+  font-size: var(--t-sm);
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.pieceSubs {
+  grid-column: 1 / -1;
+  color: var(--faint);
+  font-size: var(--t-xs);
+  line-height: 1.35;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.unmodelledItem {
+  display: grid;
+  gap: 2px;
+  padding: var(--s-3) 0;
+  border-bottom: 1px solid var(--rule);
+  color: var(--dim);
+  font-size: var(--t-sm);
+}
+
+.reason {
+  color: var(--faint);
+  font-size: var(--t-xs);
+  line-height: 1.4;
+}
+
+.wording {
+  color: var(--faint);
+  font-size: var(--t-xs);
+  line-height: 1.45;
+  font-style: italic;
+  max-width: 56ch;
+}

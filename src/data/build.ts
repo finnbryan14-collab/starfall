@@ -1,7 +1,10 @@
 import type { EquippedArtifact, HitBonus } from '@/engine/damage/build';
+import type { SearchSet } from '@/engine/damage/search';
 import type { StatMap } from '@/engine/stats/scaling';
+import type { ImportedArtifact } from '@/lib/good';
 
 import { ARTIFACT_SETS, type HitCategory } from './artifact-sets-generated';
+import { mainStatValue } from './artifact-stats-generated';
 
 /**
  * Artifact set bonuses, looked up.
@@ -14,6 +17,41 @@ import { ARTIFACT_SETS, type HitCategory } from './artifact-sets-generated';
  *
  * See docs/MATH.md section 8 and docs/DATA.md section 4.
  */
+
+/**
+ * An imported artifact in the shape the engine searches over.
+ *
+ * A GOOD export carries the main stat's *key* but not its value, because the
+ * game derives the value from rarity and level — so that derivation happens
+ * here, from the generated table.
+ *
+ * Every rarity carries all eighteen main stats — even a 1-star goblet has an
+ * elemental DMG bonus. What the table has no value for is flat DEF, which is a
+ * substat and never a main stat, so an export claiming it gets null rather
+ * than a figure invented for it.
+ */
+export function equip(artifact: ImportedArtifact): EquippedArtifact | null {
+  const mainValue = mainStatValue(artifact.rarity, artifact.mainStat, artifact.level);
+  if (mainValue === null) return null;
+
+  return {
+    slotKey: artifact.slotKey,
+    setKey: artifact.setKey,
+    mainStat: artifact.mainStat,
+    mainValue,
+    substats: artifact.substats,
+  };
+}
+
+/** The bag, as the search wants it. Pieces it cannot read are left out. */
+export function equipAll(artifacts: readonly ImportedArtifact[]): EquippedArtifact[] {
+  const equipped: EquippedArtifact[] = [];
+  for (const artifact of artifacts) {
+    const piece = equip(artifact);
+    if (piece) equipped.push(piece);
+  }
+  return equipped;
+}
 
 /** Two of a set turns its 2-piece on; four turns the 4-piece on as well. */
 export const TWO_PIECE = 2;
@@ -108,6 +146,22 @@ export function resolveSetBonuses(counts: Record<string, number>): ResolvedSets 
   }
 
   return resolved;
+}
+
+/**
+ * Every set the search needs to know about, for one particular hit.
+ *
+ * The search is told about sets rather than looking them up, so this flattens
+ * `ARTIFACT_SETS` into the shape it takes — with each set's hit bonus already
+ * reduced to the amount that reaches *this* category, which is 0.2 for
+ * Noblesse Oblige on a burst and 0 on anything else.
+ */
+export function searchSets(category: HitCategory): SearchSet[] {
+  return Object.values(ARTIFACT_SETS).map((set) => ({
+    key: set.key,
+    stats: set.twoPieceStats,
+    hitBonus: set.twoPieceHitBonus?.categories.includes(category) ? set.twoPieceHitBonus.amount : 0,
+  }));
 }
 
 export type { HitCategory };

@@ -4,6 +4,7 @@ import { characterBaseStats, weaponBaseStats } from '@/engine/stats/scaling';
 import { isSubstatKey, MAIN_STAT_ODDS } from '@/engine/artifacts/model';
 
 import { CHARACTER_CURVES, CHARACTERS, characterScaling } from './characters-generated';
+import { ARTIFACT_MAIN_STATS, ARTIFACT_MAX_LEVEL, mainStatValue } from './artifact-stats-generated';
 import { WEAPON_CURVES, WEAPONS, weaponScaling } from './weapons-generated';
 
 /**
@@ -163,5 +164,81 @@ describe('growth curves', () => {
   it('cover the levels the game allows', () => {
     for (const curve of Object.values(CHARACTER_CURVES)) expect(curve.length).toBe(100);
     for (const curve of Object.values(WEAPON_CURVES)) expect(curve.length).toBe(90);
+  });
+});
+
+describe('artifact-stats-generated', () => {
+  /** Wiki, Artifact/Stats: the 5-star ranges, at both ends. */
+  it('matches the published ranges for a 5-star piece', () => {
+    const five = ARTIFACT_MAIN_STATS['5'];
+
+    expect(five.hp[0]).toBeCloseTo(717, 1);
+    expect(five.hp[20]).toBeCloseTo(4780, 1);
+    expect(five.atk[20]).toBeCloseTo(311, 1);
+    expect(five.atk_[0]).toBeCloseTo(7.0, 2);
+    expect(five.atk_[20]).toBeCloseTo(46.6, 2);
+    expect(five.cd[20]).toBeCloseTo(62.2, 2);
+    expect(five.cr[20]).toBeCloseTo(31.1, 2);
+    expect(five.er[20]).toBeCloseTo(51.8, 2);
+    expect(five.em[20]).toBeCloseTo(186.5, 2);
+    expect(five.pyro_dmg[20]).toBeCloseTo(46.6, 2);
+  });
+
+  /** Wiki, Artifact/Stats: +4, +8, +12, +16, +20 by rarity. */
+  it('stops each rarity where the game stops it', () => {
+    expect(ARTIFACT_MAX_LEVEL).toEqual({ 1: 4, 2: 8, 3: 12, 4: 16, 5: 20 });
+
+    for (const [rarity, maxLevel] of Object.entries(ARTIFACT_MAX_LEVEL)) {
+      for (const values of Object.values(ARTIFACT_MAIN_STATS[rarity])) {
+        expect(values.length, rarity).toBe(maxLevel + 1);
+      }
+    }
+  });
+
+  /**
+   * Not linear, which is the whole reason for shipping a table: interpolating
+   * 7.0 to 46.6 over twenty levels would put +1 at 8.98 where the game says
+   * 9.0, and be wrong by a little at every level in between.
+   */
+  it('is not a straight line between its endpoints', () => {
+    const values = ARTIFACT_MAIN_STATS['5'].atk_;
+    const straight = values[0] + (values[20] - values[0]) / 20;
+
+    expect(values[1]).not.toBeCloseTo(straight, 3);
+    expect(values[1]).toBeCloseTo(9.0, 2);
+  });
+
+  it('only ever goes up', () => {
+    for (const [rarity, byStat] of Object.entries(ARTIFACT_MAIN_STATS)) {
+      for (const [key, values] of Object.entries(byStat)) {
+        for (let level = 1; level < values.length; level++) {
+          expect(values[level], `${rarity} ${key} +${level}`).toBeGreaterThan(values[level - 1]);
+        }
+      }
+    }
+  });
+
+  /**
+   * Every rarity carries all eighteen main stats — even a 1-star goblet has an
+   * elemental DMG bonus. The one thing missing is flat DEF, which is a substat
+   * and never a main stat, so a file claiming it gets null rather than a value
+   * invented for it.
+   */
+  it('is null for a stat that is never a main stat', () => {
+    expect(mainStatValue(5, 'def', 20)).toBeNull();
+    expect(mainStatValue(5, 'pyro_dmg', 20)).toBeCloseTo(46.6, 2);
+    expect(mainStatValue(1, 'pyro_dmg', 4)).toBeGreaterThan(0);
+  });
+
+  it('has no rarity missing a main stat the others have', () => {
+    const keys = Object.keys(ARTIFACT_MAIN_STATS['5']);
+    for (const [rarity, byStat] of Object.entries(ARTIFACT_MAIN_STATS)) {
+      expect(Object.keys(byStat).sort(), rarity).toEqual([...keys].sort());
+    }
+  });
+
+  it('clamps rather than reading past the end of the table', () => {
+    expect(mainStatValue(4, 'cd', 99)).toBe(ARTIFACT_MAIN_STATS['4'].cd[16]);
+    expect(mainStatValue(5, 'cd', -3)).toBe(ARTIFACT_MAIN_STATS['5'].cd[0]);
   });
 });

@@ -10,7 +10,15 @@ import { expect, test } from '@playwright/test';
  * does not fail a screenshot until someone happens to scroll.
  */
 
-const ROUTES = ['/plan', '/artifacts', '/timers', '/account', '/account/luck'];
+const ROUTES = [
+  '/plan',
+  '/artifacts',
+  '/timers',
+  '/account',
+  '/account/luck',
+  '/account/roster',
+  '/account/builds',
+];
 
 for (const route of ROUTES) {
   test(`${route} never scrolls sideways`, async ({ page }) => {

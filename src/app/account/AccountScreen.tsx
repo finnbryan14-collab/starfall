@@ -247,6 +247,12 @@ export function AccountScreen() {
           </Link>
         </p>
 
+        <p className={screen.caption}>
+          <Link href="/account/builds" className={styles.quiet}>
+            Find a character’s best build
+          </Link>
+        </p>
+
         <HoyolabPanel uid={profile?.uid ?? null} />
 
         <BackupPanel />

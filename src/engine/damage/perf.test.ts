@@ -15,12 +15,12 @@ import { mulberry32, pick, randomInt, type Rng } from '@/engine/rng';
  * for it, unlike the Plan screen's 50ms input-change budget. Measured across
  * three generated bags of that size: 68ms, 88ms and 1.2s, always exhaustive.
  *
- * Wall-clock assertions live under `pnpm perf`, which runs this file on its
- * own. Inside `pnpm test` they measure contention between worker threads
- * instead; see src/engine/wish/perf.test.ts for how that went. What stays in
- * the default suite is the claim that matters for correctness — that the search
- * completes exhaustively on a bag this size, rather than quietly falling back
- * to the node budget.
+ * Everything but the smallest case lives under `pnpm perf`, which runs this
+ * file on its own. A 400-artifact search left in the default suite does not
+ * merely run slowly: it starves the other worker threads, and tests in three
+ * unrelated files start failing on timeouts of their own. What stays behind is
+ * a hundred-artifact bag, which still proves the search completes exhaustively
+ * rather than quietly falling back to the node budget.
  */
 
 const PERF = Boolean(process.env.PERF);
@@ -131,11 +131,29 @@ const search = (artifacts: readonly EquippedArtifact[], top = 5) =>
 
 describe('searching a real bag', () => {
   /**
+   * A hundred artifacts — twenty per slot, 3.2 million combinations — in about
+   * five milliseconds. Small enough to belong in the suite people run on every
+   * save, and still enough that an unsound bound or a broken prune would show.
+   */
+  it('finishes exhaustively on a small bag', () => {
+    const result = search(bagOf(20, mulberry32(2026)));
+
+    expect(result.exhaustive).toBe(true);
+    expect(result.best).toHaveLength(5);
+    expect(result.evaluated).toBeLessThan(10_000);
+  });
+
+  /**
    * Two bags of the same size and very different difficulty: the first visits
    * 1.8 million nodes, the second 17.6 million. Both are proven optimal, which
    * is the claim that has to hold whatever the bag looks like.
+   *
+   * Under `pnpm perf` because the second takes over a second. Left in the
+   * default suite it does not merely run slowly — it starves the other worker
+   * threads, and the Monte Carlo tests three files away start failing on
+   * timeouts that have nothing to do with them.
    */
-  it.each([
+  it.runIf(PERF).each([
     { seed: 2026, nodes: 4_000_000 },
     { seed: 99, nodes: 40_000_000 },
   ])('finishes exhaustively on four hundred artifacts (seed $seed)', ({ seed, nodes }) => {

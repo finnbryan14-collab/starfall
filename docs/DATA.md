@@ -54,11 +54,13 @@ Genshin exposes wish history only through a temporary URL the game generates whe
 
 `scripts/build-game-data.mts` emits three things:
 
-| Output                             | What's in it                                            | Size       |
-| ---------------------------------- | ------------------------------------------------------- | ---------- |
-| `src/data/characters-generated.ts` | 129 characters: identity, base stats, curves, ascension | 100 KB     |
-| `src/data/weapons-generated.ts`    | 253 weapons: base ATK, second stat, curves, ascension   | 123 KB     |
-| `public/data/talents/<Key>.json`   | talent damage multipliers, one file per character       | ~3 KB each |
+| Output                                 | What's in it                                            | Size       |
+| -------------------------------------- | ------------------------------------------------------- | ---------- |
+| `src/data/characters-generated.ts`     | 129 characters: identity, base stats, curves, ascension | 100 KB     |
+| `src/data/weapons-generated.ts`        | 253 weapons: base ATK, second stat, curves, ascension   | 123 KB     |
+| `src/data/artifact-sets-generated.ts`  | 63 sets: 2-piece bonuses as data, 4-piece as wording    | 31 KB      |
+| `src/data/artifact-stats-generated.ts` | main stat values by rarity and level                    | 8 KB       |
+| `public/data/talents/<Key>.json`       | talent damage multipliers, one file per character       | ~3 KB each |
 
 Talents are **split per character rather than bundled**: all of them together are 407 KB, a screen only ever wants one character at a time, and the service worker caches each on first use.
 
@@ -74,6 +76,14 @@ genshin-optimizer lags genshin-db by a patch or two, so a brand-new character le
 - **A character with no element** in the game data is emitted as `null` and reported. Two 6.1 entries are in this state; an elemental DMG bonus applied to the wrong element would be a silently inflated number.
 - **A GOOD key collision** is reported and the later weapon skipped. Three quest weapons share the name "Prized Isshin Blade" across three rarities, and a name-derived key cannot tell them apart.
 - **A hole in a curve table** throws rather than producing NaN.
+
+### Artifact main stats come from somewhere else again
+
+A GOOD export carries an artifact's main stat **key** but not its **value**, because the game derives the value from rarity and level. genshin-db has no table for it, so that one comes from genshin-optimizer's generated stat data, cross-checked against the wiki's published ranges at +0 and +20 for every stat it prints.
+
+It is not linear. A 5-star ATK% sands runs 7.0, 9.0, 11.0, 12.9, 14.9 — the step drifts between 1.9 and 2.0, so interpolating the two published endpoints would be wrong at every level in between.
+
+The same file carries the substat roll values, so the generator also checks the `SUBSTATS` table that `src/engine/artifacts/` has shipped since the scorer was written. All ten agree with the game's own data; a silent drift in either would change every artifact score.
 
 ### The self-check
 

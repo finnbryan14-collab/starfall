@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   AMPLIFYING_COEFFICIENTS,
   amplifyingEmBonus,
+  amplifyingFor,
   amplifyingMultiplier,
   critMultiplier,
   defMultiplier,
@@ -121,6 +122,27 @@ describe('amplifying reactions', () => {
     // Vaporize: Hydro onto Pyro is the strong direction.
     expect(AMPLIFYING_COEFFICIENTS.vaporizeHydro).toBe(2);
     expect(AMPLIFYING_COEFFICIENTS.vaporizePyro).toBe(1.5);
+  });
+
+  /**
+   * The asymmetry the UI has to get right: a Pyro character vaporising is on
+   * the weak side of the reaction, and a Hydro one is on the strong side.
+   */
+  it('offers the reactions a hit of each element can actually trigger', () => {
+    expect(amplifyingFor('pyro').map((option) => [option.id, option.coefficient])).toEqual([
+      ['vaporize', 1.5],
+      ['melt', 2],
+    ]);
+    expect(amplifyingFor('hydro')).toEqual([
+      { id: 'vaporize', label: 'Vaporize, onto Pyro', coefficient: 2 },
+    ]);
+    expect(amplifyingFor('cryo').map((option) => option.coefficient)).toEqual([1.5]);
+  });
+
+  it('offers nothing to an element that cannot amplify', () => {
+    for (const element of ['anemo', 'geo', 'dendro', 'electro', null]) {
+      expect(amplifyingFor(element), String(element)).toEqual([]);
+    }
   });
 
   it('multiplies the coefficient by the EM and reaction bonuses', () => {
