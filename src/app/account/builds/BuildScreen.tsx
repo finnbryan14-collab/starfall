@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import screen from '@/components/screen.module.css';
 import { AnswerBlock, SegmentedControl, StepperRow } from '@/components/ui';
@@ -25,6 +25,7 @@ import { WEAPONS, weaponScaling } from '@/data/weapons-generated';
 import { listArtifacts } from '@/db/artifacts';
 import { listRoster } from '@/db/roster';
 import { amplifyingFor } from '@/engine/damage/formula';
+import { fireBurst } from '@/three/signal';
 import type { SearchInput } from '@/engine/damage/search';
 import { characterBaseStats, weaponBaseStats, type StatMap } from '@/engine/stats/scaling';
 import { formatNumber } from '@/lib/format';
@@ -216,6 +217,21 @@ export function BuildScreen() {
 
   const { search, pending, error } = useBuildSearch(input);
   const best = search?.best[0] ?? null;
+
+  /*
+    The eruption, once per character rather than once per answer.
+
+    Tying it to the search result would fire a full-screen burst on every nudge
+    of the enemy level, which is the difference between a moment and a
+    nuisance. Tying it to the character means it plays when you arrive at
+    someone's build — which is when the screen has something to say.
+  */
+  const erupted = useRef<string | null>(null);
+  useEffect(() => {
+    if (!best || !characterKey || erupted.current === characterKey) return;
+    erupted.current = characterKey;
+    fireBurst(data?.element ?? null, best.damage);
+  }, [best, characterKey, data]);
 
   const chosenSets = best ? activeSets(best.artifacts) : {};
   const resolved = best ? resolveSetBonuses(chosenSets) : null;

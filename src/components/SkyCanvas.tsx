@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 
 import { useReducedMotion } from '@/motion';
-import { onMeteor } from '@/three/signal';
+import { onBurst, onMeteor } from '@/three/signal';
 import { createSky, starCountFor, type Sky } from '@/three/sky';
 
 import styles from './SkyCanvas.module.css';
@@ -122,6 +122,7 @@ export function SkyCanvas() {
     // that window is dropped rather than queued — it belongs to the moment that
     // asked for it, and arriving two seconds late would be worse than not.
     const stopListening = onMeteor(() => sky?.meteor());
+    const stopBursts = onBurst(({ element, damage }) => sky?.burst(element, damage));
 
     globalThis.addEventListener('resize', onResize);
     globalThis.addEventListener('pointermove', onPointer, { passive: true });
@@ -131,6 +132,7 @@ export function SkyCanvas() {
       cancelled = true;
       cancelAnimationFrame(frame);
       stopListening();
+      stopBursts();
       globalThis.removeEventListener('resize', onResize);
       globalThis.removeEventListener('pointermove', onPointer);
       document.removeEventListener('visibilitychange', onVisibility);

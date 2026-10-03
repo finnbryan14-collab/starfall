@@ -13,6 +13,7 @@
  */
 
 export const METEOR_EVENT = 'starfall:meteor';
+export const BURST_EVENT = 'starfall:burst';
 
 /**
  * Fires a meteor across the sky, if there is a sky to fire it across.
@@ -29,4 +30,27 @@ export function onMeteor(listener: () => void): () => void {
   if (typeof document === 'undefined') return () => {};
   document.addEventListener(METEOR_EVENT, listener);
   return () => document.removeEventListener(METEOR_EVENT, listener);
+}
+
+export type BurstDetail = { element: string | null; damage: number };
+
+/**
+ * Erupts in a character's element.
+ *
+ * Fired when a calculation finishes, which is the moment the app has something
+ * to say. The element decides how it moves and the damage decides how hard.
+ */
+export function fireBurst(element: string | null, damage: number): void {
+  if (typeof document === 'undefined') return;
+  document.dispatchEvent(
+    new CustomEvent<BurstDetail>(BURST_EVENT, { detail: { element, damage } }),
+  );
+}
+
+/** Listens for the above. Returns the unsubscribe. */
+export function onBurst(listener: (detail: BurstDetail) => void): () => void {
+  if (typeof document === 'undefined') return () => {};
+  const handler = (event: Event) => listener((event as CustomEvent<BurstDetail>).detail);
+  document.addEventListener(BURST_EVENT, handler);
+  return () => document.removeEventListener(BURST_EVENT, handler);
 }

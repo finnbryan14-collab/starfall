@@ -2,6 +2,8 @@ import type * as THREE from 'three';
 
 import { mulberry32 } from '@/engine/rng';
 
+import { createElementBurst, intensityFor } from './elements';
+
 /**
  * The night sky, with depth.
  *
@@ -38,6 +40,8 @@ export type SkyOptions = {
 export type Sky = {
   /** Fires a gold streak across the sky. The one loud thing this does. */
   meteor: () => void;
+  /** Erupts in a character's element, harder for a bigger damage figure. */
+  burst: (element: string | null, damage: number) => void;
   /** Call on resize; cheap enough to call from a ResizeObserver. */
   resize: (width: number, height: number) => void;
   /** Advances the animation. Pass the frame time in seconds. */
@@ -251,6 +255,16 @@ export function createSky(three: Three, canvas: HTMLCanvasElement, options: SkyO
   trail.visible = false;
   scene.add(trail);
 
+  /*
+    The eruption, in front of everything else in the scene.
+
+    Entirely procedural — see elements.ts. It sits nearer the camera than the
+    stars and the meteor so it washes over them rather than appearing among
+    them, which is what makes it read as happening to the screen rather than in
+    the sky.
+  */
+  const elementBurst = createElementBurst(three, scene, camera, -0.2);
+
   let meteorStart = -1;
   let meteorFrom = new three.Vector3();
   let meteorTo = new three.Vector3();
@@ -269,11 +283,18 @@ export function createSky(three: Three, canvas: HTMLCanvasElement, options: SkyO
       trailMaterial.uniforms.uFade.value = 0;
     },
 
+    burst(element, damage) {
+      elementBurst.fire(element, intensityFor(damage));
+    },
+
     resize(width, height) {
       if (width <= 0 || height <= 0) return;
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
       renderer.setSize(width, height, false);
+      // The shader works in its own centred coordinates and corrects for the
+      // viewport itself, so it needs telling when that changes.
+      elementBurst.resize();
     },
 
     look(x, y) {
@@ -321,6 +342,8 @@ export function createSky(three: Three, canvas: HTMLCanvasElement, options: SkyO
         }
       }
 
+      elementBurst.frame(elapsed);
+
       renderer.render(scene, camera);
     },
 
@@ -329,6 +352,7 @@ export function createSky(three: Three, canvas: HTMLCanvasElement, options: SkyO
       starMaterial.dispose();
       trailGeometry.dispose();
       trailMaterial.dispose();
+      elementBurst.dispose();
       renderer.dispose();
     },
   };
