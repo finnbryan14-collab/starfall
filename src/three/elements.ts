@@ -143,6 +143,7 @@ const FRAGMENT = `
   uniform float uShock;
   uniform float uBody;
   uniform float uFade;
+  uniform float uFlash;
   uniform float uIntensity;
   uniform vec3 uColor;
   uniform int uElement;
@@ -206,8 +207,12 @@ const FRAGMENT = `
     } else if (uElement == 5) {
       // Geo: slabs. Flooring the domain gives hard rectangular plates, which is
       // the one element that should not look organic.
-      vec2 plates = floor(p * 5.0) / 5.0;
-      body = 0.35 + noise2(plates * 3.0 + uTime * 0.2) * 0.85;
+      vec2 plates = floor(p * 6.0) / 6.0;
+      // Same contrast collapse that fixed pyro's fog. Left linear, the plates
+      // average out to an even warm glow and geo loses the one thing that
+      // distinguishes it — that it is the element which should look built
+      // rather than grown.
+      body = pow(0.15 + noise2(plates * 3.0 + uTime * 0.2) * 1.1, 2.4) * 2.2;
       edge = step(0.5, body) * 0.6;
     } else {
       // Dendro: spreads outward in tendrils, slowly, and keeps growing.
@@ -236,11 +241,22 @@ const FRAGMENT = `
       trying to read, and a burst that costs you the number it is celebrating
       is a bad trade.
     */
-    float strength = (mass * 1.5 + ring * 1.2) * uIntensity * uFade * 0.6;
+    /*
+      The flash: a brief white bloom at the centre, over in a tenth of a second.
+
+      This is most of what gives an eruption force. Without it the shockwave
+      starts from nothing and expands, which reads as something growing; with
+      it there is an instant where the screen is overwhelmed and the ring is
+      what is left of it. It falls off steeply with radius so it never washes
+      the whole screen out.
+    */
+    float flash = uFlash * smoothstep(0.55, 0.0, radius);
+
+    float strength = (mass * 1.5 + ring * 1.2) * uIntensity * uFade * 0.6 + flash;
     if (strength < 0.004) discard;
 
     // White-hot where the mass is thickest, the element's own colour outside it.
-    vec3 color = mix(uColor, vec3(1.0), clamp(strength - 0.75, 0.0, 1.0) * 0.8);
+    vec3 color = mix(uColor, vec3(1.0), clamp(strength - 0.75, 0.0, 1.0) * 0.8 + flash);
     gl_FragColor = vec4(color, clamp(strength, 0.0, 1.0));
   }
 `;
@@ -266,6 +282,7 @@ export function createElementBurst(
     uShock: { value: 0 },
     uBody: { value: 0 },
     uFade: { value: 0 },
+    uFlash: { value: 0 },
     uIntensity: { value: 1 },
     uColor: { value: new three.Color(PHYSICAL_COLOR) },
     uElement: { value: 0 },
@@ -328,6 +345,7 @@ export function createElementBurst(
       uniforms.uShock.value = 0;
       uniforms.uBody.value = 0;
       uniforms.uFade.value = 0;
+      uniforms.uFlash.value = 0;
       quad.visible = true;
 
       /*
@@ -348,7 +366,11 @@ export function createElementBurst(
         .add(uniforms.uBody, { value: 1, duration: span * 0.3, ease: 'out(2)' }, 0)
         .add(uniforms.uBody, { value: 0, duration: span * 0.7, ease: 'in(2)' }, span * 0.3)
         .add(uniforms.uFade, { value: 1, duration: span * 0.12, ease: 'out(3)' }, 0)
-        .add(uniforms.uFade, { value: 0, duration: span * 0.55, ease: 'in(2)' }, span * 0.45);
+        .add(uniforms.uFade, { value: 0, duration: span * 0.55, ease: 'in(2)' }, span * 0.45)
+        // The flash is on and gone inside a tenth of a second. Any longer and it
+        // stops reading as an impact and starts reading as a white screen.
+        .add(uniforms.uFlash, { value: 0.9 * intensity, duration: 60, ease: 'out(2)' }, 0)
+        .add(uniforms.uFlash, { value: 0, duration: 260, ease: 'in(3)' }, 60);
     },
 
     frame(elapsed) {

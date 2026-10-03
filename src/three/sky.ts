@@ -1,7 +1,10 @@
+import { animate } from 'animejs';
 import type * as THREE from 'three';
 
 import { mulberry32 } from '@/engine/rng';
+import { duration as tokenDuration } from '@/motion';
 
+import { createDebris, type Debris } from './debris';
 import { createElementBurst, intensityFor } from './elements';
 
 /**
@@ -35,6 +38,13 @@ export type SkyOptions = {
   starCount?: number;
   /** Device pixel ratio cap. Past 2 the cost is real and the gain is not. */
   maxPixelRatio?: number;
+  /**
+   * Authored shard geometry for the eruption's debris.
+   *
+   * Optional: an empty list simply means the burst is the shader alone, which
+   * is what happens when the model fails to load. See debris.ts.
+   */
+  shards?: THREE.BufferGeometry[];
 };
 
 export type Sky = {
@@ -265,12 +275,21 @@ export function createSky(three: Three, canvas: HTMLCanvasElement, options: SkyO
   */
   const elementBurst = createElementBurst(three, scene, camera, -0.2);
 
+  // Hard silhouettes against the shader's soft body, when the model loaded.
+  const debris: Debris | null =
+    options.shards && options.shards.length > 0
+      ? createDebris(three, scene, options.shards, -0.2)
+      : null;
+
   let meteorStart = -1;
   let meteorFrom = new three.Vector3();
   let meteorTo = new three.Vector3();
 
   const target = { x: 0, y: 0 };
   const current = { x: 0, y: 0 };
+
+  /** Decays to zero after an eruption; the frame loop reads it as a shake. */
+  const kick = { value: 0 };
 
   return {
     meteor() {
@@ -284,7 +303,27 @@ export function createSky(three: Three, canvas: HTMLCanvasElement, options: SkyO
     },
 
     burst(element, damage) {
-      elementBurst.fire(element, intensityFor(damage));
+      const intensity = intensityFor(damage);
+      elementBurst.fire(element, intensity);
+      debris?.fire(element, intensity);
+
+      /*
+        A kick, and a deliberately small one.
+
+        Rotation rather than position: the burst quad is fitted to what the
+        camera sees at a fixed distance, so moving the camera would desync that
+        fit mid-eruption. A rotation shakes the whole scene and leaves the
+        geometry alone.
+
+        The amplitude is about a degree at full force. Anything a reader would
+        actually notice as shaking is obnoxious in an app whose job is showing
+        you a number.
+      */
+      const signature = tokenDuration('signature');
+      if (signature > 0) {
+        kick.value = intensity;
+        animate(kick, { value: 0, duration: signature * 0.45, ease: 'out(3)' });
+      }
     },
 
     resize(width, height) {
@@ -344,6 +383,16 @@ export function createSky(three: Three, canvas: HTMLCanvasElement, options: SkyO
 
       elementBurst.frame(elapsed);
 
+      // The shake, applied on top of whatever the pointer lean set. Two
+      // frequencies so it reads as a jolt rather than a wobble.
+      if (kick.value > 0.001) {
+        camera.rotation.z = Math.sin(elapsed * 71) * 0.018 * kick.value;
+        camera.rotation.x = Math.sin(elapsed * 53) * 0.012 * kick.value;
+      } else if (camera.rotation.z !== 0) {
+        camera.rotation.z = 0;
+        camera.rotation.x = 0;
+      }
+
       renderer.render(scene, camera);
     },
 
@@ -353,6 +402,7 @@ export function createSky(three: Three, canvas: HTMLCanvasElement, options: SkyO
       trailGeometry.dispose();
       trailMaterial.dispose();
       elementBurst.dispose();
+      debris?.dispose();
       renderer.dispose();
     },
   };

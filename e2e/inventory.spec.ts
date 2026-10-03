@@ -234,6 +234,10 @@ test.describe('GOOD inventory import', () => {
       }),
     );
     await page.getByRole('button', { name: 'Replace my inventory' }).click();
+    // Waited for, not assumed. Navigating away before the write commits aborts
+    // it, and the roster then reads an empty database — a race this file lost
+    // once the WebGL sky changed how long a page takes to settle.
+    await expect(page.getByText(/Imported 5 artifacts/)).toBeVisible();
     await page.goto('/account/roster');
 
     const roster = page.getByLabel('Every character on the account');
@@ -247,6 +251,10 @@ test.describe('GOOD inventory import', () => {
   test('shows every artifact in the bag, and who is wearing it', async ({ page }) => {
     await choose(page, goodFile());
     await page.getByRole('button', { name: 'Replace my inventory' }).click();
+    // Waited for, not assumed. Navigating away before the write commits aborts
+    // it, and the roster then reads an empty database — a race this file lost
+    // once the WebGL sky changed how long a page takes to settle.
+    await expect(page.getByText(/Imported 5 artifacts/)).toBeVisible();
     await page.goto('/account/roster');
 
     await page.getByRole('tab', { name: /Artifacts/ }).click();
@@ -259,6 +267,10 @@ test.describe('GOOD inventory import', () => {
   test('filters a large account down', async ({ page }) => {
     await choose(page, goodFile());
     await page.getByRole('button', { name: 'Replace my inventory' }).click();
+    // Waited for, not assumed. Navigating away before the write commits aborts
+    // it, and the roster then reads an empty database — a race this file lost
+    // once the WebGL sky changed how long a page takes to settle.
+    await expect(page.getByText(/Imported 5 artifacts/)).toBeVisible();
     await page.goto('/account/roster');
 
     await page.getByLabel('Filter').fill('Nahida');

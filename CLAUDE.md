@@ -54,6 +54,7 @@ pnpm typecheck    # tsc --noEmit
 pnpm perf         # engine performance budget, run isolated
 pnpm build:data   # regenerate everything in src/data/ and public/data/
 pnpm build:game-data # just the characters, weapons, artifact sets and talents
+pnpm build:models # re-author the burst shards in Blender (headless)
 pnpm build        # production build
 ```
 

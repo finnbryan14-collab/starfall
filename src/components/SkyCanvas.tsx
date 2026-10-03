@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 
 import { useReducedMotion } from '@/motion';
 import { onBurst, onMeteor } from '@/three/signal';
+import { loadShards } from '@/three/debris';
 import { createSky, starCountFor, type Sky } from '@/three/sky';
 
 import styles from './SkyCanvas.module.css';
@@ -69,12 +70,17 @@ export function SkyCanvas() {
 
     const start = performance.now();
 
+    // The renderer and the shard model in parallel. The model is 6 KB and
+    // optional, so waiting on it alongside three costs nothing and avoids a
+    // first eruption that arrives without its debris.
     void import('three')
-      .then((three) => {
+      .then(async (three) => ({ three, shards: await loadShards() }))
+      .then(({ three, shards }) => {
         if (cancelled || !canvasRef.current) return;
 
         sky = createSky(three, canvas, {
           starCount: starCountFor(globalThis.innerWidth),
+          shards,
         });
         sky.resize(globalThis.innerWidth, globalThis.innerHeight);
 
