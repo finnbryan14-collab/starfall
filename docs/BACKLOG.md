@@ -14,7 +14,7 @@ Ideas from planning, not scheduled. Pull into ROADMAP.md when v1 ships.
 
 ## Artifacts and builds
 
-- **Build optimizer:** shipped at `/account/builds` — the damage formula, the stat layer, the generated game data, build assembly, the branch-and-bound search in a worker, and a buff panel for team effects as explicit inputs. Still open: weapon and talent passives (currently typed in by hand), transformative reactions, and presets for the common team buffs so nobody has to look up what Bennett's burst is worth.
+- **Build optimizer:** shipped at `/account/builds` — the damage formula, the stat layer, the generated game data, build assembly, the branch-and-bound search in a worker, a weapon picker over every weapon of the right type on the account, and a buff panel for team effects as explicit inputs. Still open: weapon and talent passives (currently typed in by hand), transformative reactions, and presets for the common team buffs so nobody has to look up what Bennett's burst is worth.
 - **Sanctifying Elixir vs. domain farming** comparison.
 - **"Level to +8, then decide"** flow that remembers the piece and re-scores it.
 - Pick artifacts from the imported GOOD inventory instead of manual entry.
@@ -23,7 +23,9 @@ Ideas from planning, not scheduled. Pull into ROADMAP.md when v1 ships.
 
 Asked for on 2026-10-02: see every imported character, artifact and weapon, and calculate directly against them to optimise builds, teams and rotations for maximum damage. Four steps, and they get progressively harder for a reason worth knowing up front.
 
-**1. Show everything.** `/account/roster` already lists characters and artifacts; weapons are imported and stored but never displayed. Add them, make all three filterable and sortable, and show what each piece is currently doing — which character holds it, what it would be worth elsewhere.
+**1. Show everything.** _Done 2026-10-05._ `/account/roster` has three tabs, each filterable and sortable, and `src/lib/inventory.ts` joins a weapon to the generated tables so a row reads "674 base ATK, CRIT DMG 44.1%" rather than just "Mistsplitter Reforged". The summary says how much of the account is idle, which is the thing a list cannot tell you. The build screen now computes against any weapon of the right type, not only the one the export says the character is holding.
+
+Left out deliberately: "what this piece would be worth elsewhere" needs a damage figure per piece per character, which is step 2's assignment problem and not a label step 1 can print honestly.
 
 **2. Optimise across the account, not one character at a time.** Today the search answers "what are the best five for Hu Tao". The real question is "where does this piece do the most good", which is an assignment problem across the whole roster rather than a search per character. The branch-and-bound objective already exists; what is missing is the outer loop and a way to express "nobody may wear the same artifact twice".
 
@@ -31,7 +33,7 @@ Asked for on 2026-10-02: see every imported character, artifact and weapon, and 
 
 **4. Rotations.** The largest step, and the one that needs a model the app does not have yet: a timeline with energy, cooldowns, buff durations and infusion windows, so "Bennett Q → Xiangling Q → Hu Tao E → N1C" produces a damage-per-rotation figure rather than a damage-per-hit one. Needs step 3 finished first, because a rotation is mostly an argument about which buffs are up when.
 
-Steps 1 and 2 are mostly engineering on parts that already exist. Steps 3 and 4 are mostly research, and each hand-written buff is a number that has to be cited rather than remembered.
+Step 2 is mostly engineering on parts that already exist. Steps 3 and 4 are mostly research, and each hand-written buff is a number that has to be cited rather than remembered.
 
 ## Social
 

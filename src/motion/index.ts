@@ -23,5 +23,5 @@ export {
 } from './reduced-motion';
 export { useReducedMotion } from './useReducedMotion';
 export { useAnimeScope } from './useAnimeScope';
-export { tweenNumber, type TweenNumberOptions } from './tweenNumber';
+export { tweenNumber, COUNTING_ATTRIBUTE, type TweenNumberOptions } from './tweenNumber';
 export { useTweenedNumeral } from './useTweenedNumeral';

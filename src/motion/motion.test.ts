@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { DURATION_FALLBACK_MS, duration, parseCssDuration } from '@/motion/durations';
 import { onReducedMotionChange, prefersReducedMotion } from '@/motion/reduced-motion';
+import { COUNTING_ATTRIBUTE, tweenNumber } from '@/motion/tweenNumber';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -99,5 +100,67 @@ describe('prefersReducedMotion', () => {
     vi.stubGlobal('matchMedia', undefined);
     expect(prefersReducedMotion()).toBe(false);
     expect(() => onReducedMotionChange(() => {})()).not.toThrow();
+  });
+});
+
+/**
+ * A counting numeral shows a value it does not mean yet, and the flag is how
+ * anything else — a test, a style — can tell the difference. The e2e suite now
+ * depends on it, after inferring the same thing from two reads agreeing and
+ * failing a whole describe block on a loaded machine while the screen was
+ * correct.
+ */
+describe('tweenNumber', () => {
+  const numeral = (): HTMLElement => {
+    const element = document.createElement('span');
+    document.body.append(element);
+    return element;
+  };
+
+  const finished = (element: HTMLElement, to: number, ms: number): Promise<void> =>
+    new Promise((resolve) => {
+      tweenNumber(element, 0, to, (value) => Math.round(value).toString(), {
+        durationMs: ms,
+        onComplete: () => resolve(),
+      });
+    });
+
+  it('flags the numeral while it counts and clears it at the end', async () => {
+    const element = numeral();
+    const done = finished(element, 100, 20);
+
+    // Set synchronously, so nothing can read the numeral between the call and
+    // the first frame without seeing it.
+    expect(element.getAttribute(COUNTING_ATTRIBUTE)).toBe('true');
+
+    await done;
+    expect(element.hasAttribute(COUNTING_ATTRIBUTE)).toBe(false);
+    expect(element.textContent).toBe('100');
+  });
+
+  it('never flags a numeral that did not animate', () => {
+    const element = numeral();
+    // A zero duration is how tokens.css expresses reduced motion.
+    tweenNumber(element, 0, 42, (value) => Math.round(value).toString(), { durationMs: 0 });
+
+    expect(element.hasAttribute(COUNTING_ATTRIBUTE)).toBe(false);
+    expect(element.textContent).toBe('42');
+  });
+
+  it('keeps the flag while a newer tween is still running', async () => {
+    const element = numeral();
+
+    // Two changes in quick succession animate separate counter objects on one
+    // numeral. The first to finish must not clear a flag the second owns, or
+    // a reader is told the count is over while it is still moving.
+    const first = finished(element, 50, 20);
+    const second = finished(element, 100, 120);
+
+    await first;
+    expect(element.getAttribute(COUNTING_ATTRIBUTE)).toBe('true');
+
+    await second;
+    expect(element.hasAttribute(COUNTING_ATTRIBUTE)).toBe(false);
+    expect(element.textContent).toBe('100');
   });
 });

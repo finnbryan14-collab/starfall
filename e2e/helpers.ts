@@ -18,28 +18,25 @@ export async function readAnswer(page: Page) {
 /**
  * Waits for a counting numeral to stop moving, then returns it.
  *
- * Every big answer now counts to its value rather than snapping, so reading one
- * the instant it appears catches it partway — a 49.5% read as 0.1 on its way
- * up. Polling until two reads agree is the honest way to ask "what does it say
- * now that it has finished saying it".
+ * Every big answer counts to its value rather than snapping, so reading one the
+ * instant it appears catches it partway — a 49.5% read as 0.1 on its way up.
+ *
+ * This asks the numeral whether it is still counting rather than inferring it
+ * from two reads agreeing. The inference is not sound: the tween runs on
+ * requestAnimationFrame, and under a full parallel run the frames spread far
+ * enough apart that consecutive samples disagree for as long as you keep
+ * sampling — which failed the whole build-optimiser block on a loaded machine
+ * while the screen itself was perfectly correct. `tweenNumber` sets the
+ * attribute for exactly this reason.
  */
 export async function settledAnswer(page: Page): Promise<string> {
   const numeral = page.locator('p[aria-hidden="true"] span').first();
-  let previous: string | null = null;
 
-  await expect
-    .poll(
-      async () => {
-        const current = await numeral.textContent();
-        const stable = current !== null && current === previous;
-        previous = current;
-        return stable;
-      },
-      { timeout: 15_000 },
-    )
-    .toBe(true);
+  // Absent is the settled state, and it is also what a numeral that never
+  // animated looks like — under reduced motion nothing sets it at all.
+  await expect(numeral).not.toHaveAttribute('data-counting', 'true', { timeout: 20_000 });
 
-  return previous ?? '';
+  return (await numeral.textContent()) ?? '';
 }
 
 /**

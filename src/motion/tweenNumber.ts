@@ -21,6 +21,27 @@ export type TweenNumberOptions = {
   onComplete?: () => void;
 };
 
+/**
+ * While a numeral is counting, it carries `data-counting="true"`.
+ *
+ * A counting numeral is showing a value it does not mean yet, and anything
+ * reading it has to know the difference. Two reads agreeing is the obvious
+ * test and it is not a sound one: the tween runs on requestAnimationFrame, so
+ * on a loaded machine the frames spread out and two samples taken a second
+ * apart legitimately disagree for as long as you care to keep sampling. The
+ * attribute says it outright instead of inferring it from timing.
+ */
+export const COUNTING_ATTRIBUTE = 'data-counting';
+
+/**
+ * The newest tween per element.
+ *
+ * Two tweens can overlap on one numeral — a second input change before the
+ * first finished — and they animate separate counter objects, so the older
+ * one's completion must not clear a flag the newer one still owns.
+ */
+const runs = new WeakMap<HTMLElement, number>();
+
 export function tweenNumber(
   element: HTMLElement,
   from: number,
@@ -32,13 +53,24 @@ export function tweenNumber(
 
   const ms = durationMs ?? tokenDuration(token, element);
 
+  const run = (runs.get(element) ?? 0) + 1;
+  runs.set(element, run);
+
+  const land = () => {
+    // Land exactly on the target rather than wherever the last frame fell.
+    element.textContent = format(to);
+    if (runs.get(element) === run) element.removeAttribute(COUNTING_ATTRIBUTE);
+    onComplete?.();
+  };
+
   // Two independent reasons to skip: the user asked for less motion, or the
   // token itself is zero (which is how tokens.css expresses the same thing).
   if (prefersReducedMotion() || ms <= 0) {
-    element.textContent = format(to);
-    onComplete?.();
+    land();
     return;
   }
+
+  element.setAttribute(COUNTING_ATTRIBUTE, 'true');
 
   const counter = { value: from };
   animate(counter, {
@@ -48,10 +80,6 @@ export function tweenNumber(
     onUpdate: () => {
       element.textContent = format(counter.value);
     },
-    onComplete: () => {
-      // Land exactly on the target rather than wherever the last frame fell.
-      element.textContent = format(to);
-      onComplete?.();
-    },
+    onComplete: land,
   });
 }

@@ -19,6 +19,7 @@
 
 .tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--s-2);
   margin-top: var(--s-4);
 }
@@ -26,6 +27,7 @@
 .tab {
   min-height: var(--tap);
   padding: 0 var(--s-3);
+  white-space: nowrap;
   border-radius: var(--r-input);
   border: 1px solid var(--rule);
   background: transparent;
@@ -95,4 +97,88 @@
 
 .subs {
   font-variant-numeric: lining-nums tabular-nums;
+}
+
+/* The account at a glance: three facts a list cannot tell you. */
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-5);
+  list-style: none;
+  padding: 0;
+  margin: var(--s-4) 0 0;
+}
+
+.fact {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.factValue {
+  color: var(--starlight);
+  font-size: var(--t-lg);
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.factOf {
+  color: var(--faint);
+  font-size: var(--t-sm);
+}
+
+.factLabel {
+  color: var(--dim);
+  font-size: var(--t-xs);
+}
+
+/* Filter and sort share a row: both narrow what the list below shows. */
+.controls {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin-top: var(--s-3);
+}
+
+.controls .filter {
+  flex: 1 1 auto;
+  margin-top: 0;
+}
+
+.sortLabel {
+  color: var(--dim);
+  font-size: var(--t-sm);
+  white-space: nowrap;
+}
+
+.select {
+  min-height: var(--tap);
+  background: var(--well);
+  color: inherit;
+  font: inherit;
+  border: 1px solid transparent;
+  border-radius: var(--r-input);
+  padding: 0 var(--s-2);
+  max-width: 100%;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: var(--tap);
+  color: var(--dim);
+  font-size: var(--t-sm);
+  cursor: pointer;
+}
+
+.toggle input {
+  accent-color: var(--gold);
+  width: 18px;
+  height: 18px;
+}
+
+/* Gold because rarity is the one thing on these rows worth a colour. */
+.stars {
+  color: var(--gold);
+  letter-spacing: -0.05em;
 }

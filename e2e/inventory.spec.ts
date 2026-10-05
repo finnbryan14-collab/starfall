@@ -212,11 +212,98 @@ test.describe('GOOD inventory import', () => {
     await page.getByRole('link', { name: /every character and artifact/i }).click();
     await expect(page).toHaveURL(/\/account\/roster$/);
 
-    await expect(page.getByText(/2 characters and 5 artifacts/)).toBeVisible();
+    await expect(page.getByText(/2 characters, 5 artifacts and 1 weapon/)).toBeVisible();
 
     const roster = page.getByLabel('Every character on the account');
     await expect(roster).toContainText('Kamisato Ayaka');
     await expect(roster).toContainText('Nahida');
+  });
+
+  /**
+   * Weapons were imported and stored from the start and shown nowhere, because
+   * a GOOD export carries a name and a level and nothing to judge one by. The
+   * figures come from the generated tables, so this is also the check that the
+   * two are joined correctly.
+   *
+   * Wiki, Mistsplitter Reforged, row 90/90: 674 Base ATK, 44.1% CRIT DMG.
+   *   source: https://genshin-impact.fandom.com/wiki/Mistsplitter_Reforged
+   *   verifiedAt: 2026-10-05
+   */
+  test('shows a weapon with the stats a player can judge it by', async ({ page }) => {
+    await choose(page, goodFile());
+    await page.getByRole('button', { name: 'Replace my inventory' }).click();
+    await expect(page.getByText(/Imported 5 artifacts/)).toBeVisible();
+    await page.goto('/account/roster');
+
+    await page.getByRole('tab', { name: /Weapons/ }).click();
+    const armoury = page.getByLabel('Every weapon on the account');
+    await expect(armoury).toContainText('Mistsplitter Reforged');
+    await expect(armoury).toContainText('Lv 90');
+    await expect(armoury).toContainText('sword');
+    // The join against the generated tables, in both units at once.
+    await expect(armoury).toContainText('674 base ATK');
+    await expect(armoury).toContainText('CRIT DMG 44.1%');
+  });
+
+  test('sorts a bag the way the player asks', async ({ page }) => {
+    /*
+      Its own pieces rather than the shared fixture, whose five are all +20
+      with identical substats — every sort would agree on them and the test
+      would pass without ordering anything.
+    */
+    await choose(
+      page,
+      goodFile({
+        artifacts: [
+          {
+            setKey: 'BlizzardStrayer',
+            slotKey: 'circlet',
+            level: 4,
+            rarity: 5,
+            mainStatKey: 'critRate_',
+            substats: [{ key: 'critDMG_', value: 28 }],
+          },
+          {
+            setKey: 'BlizzardStrayer',
+            slotKey: 'flower',
+            level: 20,
+            rarity: 5,
+            mainStatKey: 'hp',
+            substats: [{ key: 'critDMG_', value: 7 }],
+          },
+        ],
+      }),
+    );
+    await page.getByRole('button', { name: 'Replace my inventory' }).click();
+    await expect(page.getByText(/Imported 2 artifacts/)).toBeVisible();
+    await page.goto('/account/roster');
+
+    await page.getByRole('tab', { name: /Artifacts/ }).click();
+    const rows = page.getByLabel('Every artifact in the bag').getByRole('listitem');
+
+    // Slot order, which is how a player reads their own bag.
+    await page.getByLabel('Sort').selectOption('slot');
+    await expect(rows.first()).toContainText('flower');
+
+    // Crit value asks a different question — and gets a different answer from
+    // the same two rows, which is the whole point of offering the choice.
+    await page.getByLabel('Sort').selectOption('critValue');
+    await expect(rows.first()).toContainText('circlet');
+  });
+
+  test('hides what is already in use when asked', async ({ page }) => {
+    await choose(page, goodFile());
+    await page.getByRole('button', { name: 'Replace my inventory' }).click();
+    await expect(page.getByText(/Imported 5 artifacts/)).toBeVisible();
+    await page.goto('/account/roster');
+
+    await page.getByRole('tab', { name: /Artifacts/ }).click();
+    const bag = page.getByLabel('Every artifact in the bag');
+    await expect(bag).toContainText('on Kamisato Ayaka');
+
+    await page.getByLabel('Only what nobody is using').check();
+    await expect(bag).not.toContainText('on Kamisato Ayaka');
+    await expect(bag).toContainText('unequipped');
   });
 
   test('shows the talent levels no API carries', async ({ page }) => {

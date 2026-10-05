@@ -64,6 +64,16 @@ function goodFile() {
     ],
     weapons: [
       { key: 'StaffOfHoma', level: 90, ascension: 6, refinement: 1, location: 'HuTao' },
+      /*
+        A second copy of the same weapon, badly levelled and in the bag.
+
+        The same weapon rather than a different one on purpose: at 20/20 Homa
+        is 122 ATK and 25.4% CRIT DMG against 608 and 66.2% at 90/90, which is
+        strictly worse in both stats it carries. Any other polearm would trade
+        CRIT Rate against CRIT DMG and the direction of the change would depend
+        on the rolls rather than on the swap.
+      */
+      { key: 'StaffOfHoma', level: 20, ascension: 0, refinement: 1, location: '' },
       { key: 'FavoniusSword', level: 90, ascension: 6, refinement: 1, location: 'Bennett' },
     ],
     artifacts: [
@@ -121,9 +131,20 @@ async function readDamage(page: Page): Promise<number> {
  * every later assertion meaningless.
  */
 async function settled(page: Page): Promise<number> {
-  await expect(page.locator('section[aria-busy="false"]')).toBeVisible();
+  /*
+    A generous ceiling, deliberately.
+
+    Getting here means an import, a Dexie read, a talent file fetched over HTTP
+    and a branch-and-bound search in a Web Worker. Under full parallelism this
+    file runs a dozen of those at once on one machine, and at the default ten
+    seconds the whole describe block failed on load alone — every failure
+    reading as "the screen never answered" when the screen answers fine in
+    isolation. The assertion is about correctness, never speed; `pnpm perf`
+    owns speed and is run alone.
+  */
+  await expect(page.locator('section[aria-busy="false"]')).toBeVisible({ timeout: 30_000 });
   await expect
-    .poll(async () => Number.isFinite(await readDamage(page)), { timeout: 15_000 })
+    .poll(async () => Number.isFinite(await readDamage(page)), { timeout: 30_000 })
     .toBe(true);
   return readDamage(page);
 }
@@ -139,6 +160,15 @@ async function expectDamageToChange(page: Page, previous: number): Promise<numbe
 }
 
 test.describe('build optimiser', () => {
+  /*
+    Twice the default, because getting to the first assertion is unusually
+    expensive here: an import, a Dexie read, a talent file fetched over HTTP
+    and a branch-and-bound search in a worker, all before the test's own
+    subject. Under a full parallel run that can eat most of the default thirty
+    seconds and leave none for what the test came to check.
+  */
+  test.describe.configure({ timeout: 60_000 });
+
   test.beforeEach(async ({ page }) => {
     await importInventory(page);
     await page.goto('/account/builds');
@@ -175,6 +205,48 @@ test.describe('build optimiser', () => {
     await expect(unmodelled).toBeVisible();
     await expect(unmodelled).toContainText(/4-piece/);
     await expect(unmodelled).toContainText(/Depends on something Starfall cannot see/);
+  });
+
+  /**
+   * The question a bag full of weapons raises and nothing could answer: would
+   * the spare one be better? Until now the screen used whatever the export said
+   * the character was holding and offered no way to ask.
+   */
+  test('computes against any weapon the character could hold', async ({ page }) => {
+    const holding = await readDamage(page);
+
+    const picker = page.getByLabel('Weapon', { exact: true });
+    // Only polearms: offering Bennett's sword would be an answer the game
+    // would never let you act on.
+    await expect(picker.locator('option')).toHaveCount(2);
+    await expect(picker).toContainText('(holding)');
+
+    // Her own Homa at 90 is the default, so the figure must name it. Matched
+    // on "chosen from", which only the verdict says — the picker's own options
+    // mention the weapon too.
+    await expect(page.getByText(/chosen from.*artifacts/)).toContainText('Staff of Homa');
+
+    // The +20 copy is strictly worse in both stats Homa carries.
+    await picker.selectOption({ index: 1 });
+    expect(await expectDamageToChange(page, holding)).toBeLessThan(holding);
+  });
+
+  /**
+   * Switching character must not leave the previous one's weapon selected. The
+   * choice is derived rather than reset in an effect, so this is the test that
+   * the derivation falls back to what the new character is actually holding.
+   */
+  test('does not carry one character’s weapon over to another', async ({ page }) => {
+    const picker = page.getByLabel('Weapon', { exact: true });
+    await picker.selectOption({ index: 1 });
+    await expect(page.getByText(/chosen from.*artifacts/)).toContainText('Staff of Homa');
+
+    await page.getByLabel('Character', { exact: true }).selectOption('Bennett');
+
+    // Bennett holds a sword, and the only sword on the account is his.
+    await expect(picker.locator('option')).toHaveCount(1);
+    await expect(picker).toContainText('Favonius Sword');
+    await expect(page.getByText(/chosen from.*artifacts/)).toContainText('Favonius Sword');
   });
 
   test('changes its answer when the hit changes', async ({ page }) => {

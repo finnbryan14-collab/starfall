@@ -5,7 +5,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import screen from '@/components/screen.module.css';
 import { AnswerBlock, SegmentedControl, StepperRow } from '@/components/ui';
-import { ARTIFACT_SETS } from '@/data/artifact-sets-generated';
 import {
   activeSets,
   equipAll,
@@ -21,17 +20,22 @@ import {
   talentOptions,
   type TalentOption,
 } from '@/data/talents';
-import { WEAPONS, weaponScaling } from '@/data/weapons-generated';
 import { listArtifacts } from '@/db/artifacts';
-import { listRoster } from '@/db/roster';
+import { listRoster, listWeapons } from '@/db/roster';
 import { amplifyingFor } from '@/engine/damage/formula';
 import { fireBurst } from '@/lib/moments';
 import type { SearchInput } from '@/engine/damage/search';
-import { characterBaseStats, weaponBaseStats, type StatMap } from '@/engine/stats/scaling';
+import { characterBaseStats, type StatMap } from '@/engine/stats/scaling';
 import { formatNumber } from '@/lib/format';
 import { useTweenedNumeral } from '@/motion';
 import type { ImportedArtifact, ImportedCharacter } from '@/lib/good';
-import { readableKey } from '@/lib/good';
+import {
+  characterName,
+  resolveWeapons,
+  setName,
+  sortWeapons,
+  type WeaponView,
+} from '@/lib/inventory';
 import { formatStat, formatStatValue, statName } from '@/lib/stats';
 import { readOr } from '@/lib/storage';
 import { useBuildSearch } from '@/workers/useBuildSearch';
@@ -72,9 +76,11 @@ const DEFAULT_RESISTANCE = 10;
 export function BuildScreen() {
   const [roster, setRoster] = useState<ImportedCharacter[]>([]);
   const [bag, setBag] = useState<ImportedArtifact[]>([]);
+  const [armoury, setArmoury] = useState<WeaponView[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   const [characterKey, setCharacterKey] = useState('');
+  const [weaponId, setWeaponId] = useState('');
   const [hitIndex, setHitIndex] = useState(0);
   const [options, setOptions] = useState<TalentOption[]>([]);
   /** Whose talents `options` holds, so a stale list is never treated as ready. */
@@ -90,15 +96,13 @@ export function BuildScreen() {
   useEffect(() => {
     let cancelled = false;
     void readOr(
-      async (): Promise<[ImportedCharacter[], ImportedArtifact[]]> => [
-        await listRoster(),
-        await listArtifacts(),
-      ],
-      [[], []] as [ImportedCharacter[], ImportedArtifact[]],
-    ).then(([characters, artifacts]) => {
+      async () => [await listRoster(), await listArtifacts(), await listWeapons()] as const,
+      [[], [], []] as const,
+    ).then(([characters, artifacts, weapons]) => {
       if (cancelled) return;
       setRoster(characters);
       setBag(artifacts);
+      setArmoury(resolveWeapons(weapons));
       // The highest-level character is the one most likely to be worth
       // optimising, and listRoster already sorts that way.
       setCharacterKey((current) => current || (characters[0]?.key ?? ''));
@@ -111,6 +115,32 @@ export function BuildScreen() {
 
   const character = roster.find((entry) => entry.key === characterKey) ?? null;
   const data = characterKey ? CHARACTERS[characterKey] : undefined;
+
+  /*
+    Every weapon on the account this character could actually hold.
+
+    A Hu Tao list that offers swords is worse than no list: the whole value of
+    the picker is answering "would my spare Homa beat the Deathmatch she is
+    holding", and a wrong-type option is an answer the game would never let you
+    act on.
+  */
+  const weaponChoices = useMemo(() => {
+    if (!data) return [];
+    return sortWeapons(
+      armoury.filter((weapon) => weapon.weaponType === data.weaponType),
+      'atk',
+    );
+  }, [armoury, data]);
+
+  /*
+    Derived rather than reset in an effect. The chosen id survives a change of
+    character only when that character could hold it; otherwise this falls back
+    to what they are actually holding, so switching to Hu Tao never shows her
+    wielding someone else's sword.
+  */
+  const held = weaponChoices.find((weapon) => weapon.location === characterKey) ?? null;
+  const weapon =
+    weaponChoices.find((entry) => entry.id === weaponId) ?? held ?? weaponChoices[0] ?? null;
 
   // Talents are fetched per character, so this is the one piece of the input
   // that arrives asynchronously.
@@ -159,14 +189,9 @@ export function BuildScreen() {
       character.ascension,
     );
 
-    const weaponData = character.weapon ? WEAPONS[character.weapon.key] : undefined;
-    const weaponStats = weaponData
-      ? weaponBaseStats(
-          weaponScaling(weaponData),
-          Math.min(character.weapon?.level ?? 1, 90),
-          character.weapon?.ascension ?? 0,
-        ).stats
-      : {};
+    // Resolved once in src/lib/inventory.ts, which clamps to the weapon's own
+    // cap — 70 for the lowest rarities, not 90 for everything.
+    const weaponStats = weapon?.stats ?? {};
 
     // Resolved here rather than in render: which coefficient a reaction is worth
     // depends on the character's element, so the two have to move together.
@@ -208,6 +233,7 @@ export function BuildScreen() {
     data,
     option,
     equipped,
+    weapon,
     buffs,
     talentLevel,
     enemyLevel,
@@ -292,6 +318,7 @@ export function BuildScreen() {
               talentLevel={talentLevel}
               bagSize={equipped.length}
               sets={chosenSets}
+              weaponName={weapon?.name ?? null}
               exhaustive={search?.exhaustive ?? true}
               missing={search?.missing ?? []}
               reactionLabel={reactions.find((entry) => entry.id === reactionId)?.label ?? null}
@@ -321,6 +348,55 @@ export function BuildScreen() {
               </option>
             ))}
           </select>
+
+          <label className={styles.label} htmlFor="build-weapon">
+            Weapon
+          </label>
+          {weaponChoices.length === 0 ? (
+            <p className={styles.explain}>
+              {data
+                ? `No ${data.weaponType} in your export, so this is computed from artifacts alone — a damage figure without a weapon is far too low to compare with anything.`
+                : 'Pick a character first.'}
+            </p>
+          ) : (
+            <>
+              <select
+                id="build-weapon"
+                className={styles.select}
+                value={weapon?.id ?? ''}
+                onChange={(event) => setWeaponId(event.target.value)}
+              >
+                {weaponChoices.map((entry) => (
+                  <option key={entry.id} value={entry.id}>
+                    {'★'.repeat(entry.rarity ?? 0)} {entry.name}
+                    {entry.refinement > 1 ? ` R${entry.refinement}` : ''} — Lv {entry.level}
+                    {entry.location
+                      ? entry.location === characterKey
+                        ? ' (holding)'
+                        : ` (on ${characterName(entry.location)})`
+                      : ''}
+                  </option>
+                ))}
+              </select>
+              <p className={styles.explain}>
+                {/*
+                  Every weapon of the right type, not only the one they hold —
+                  "would my spare Homa beat this" is the question a bag full of
+                  weapons raises and nothing could answer.
+                */}
+                {weapon
+                  ? `${formatStatValue('atk', weapon.atk ?? 0)} base ATK${
+                      weapon.substatKey && weapon.substatValue !== null
+                        ? `, ${formatStat(weapon.substatKey, weapon.substatValue)}`
+                        : ''
+                    }. Passives are not applied — they are conditional, so they belong in team buffs below.`
+                  : ''}
+                {weapon && weapon.location && weapon.location !== characterKey
+                  ? ` ${characterName(weapon.location)} is holding this one.`
+                  : ''}
+              </p>
+            </>
+          )}
 
           <label className={styles.label} htmlFor="build-hit">
             Hit
@@ -409,9 +485,7 @@ export function BuildScreen() {
               <ul className={styles.pieces} aria-label="The five artifacts it chose">
                 {best.artifacts.map((piece, index) => (
                   <li className={styles.piece} key={`${piece.slotKey}-${index}`}>
-                    <span className={styles.pieceName}>
-                      {ARTIFACT_SETS[piece.setKey]?.name ?? readableKey(piece.setKey)}
-                    </span>
+                    <span className={styles.pieceName}>{setName(piece.setKey)}</span>
                     <span className={styles.pieceSlot}>{piece.slotKey}</span>
                     <span className={styles.pieceMain}>
                       {formatStat(piece.mainStat, piece.mainValue)}
@@ -467,6 +541,8 @@ type VerdictProps = {
   talentLevel: number;
   bagSize: number;
   sets: Record<string, number>;
+  /** The weapon the figure assumes, so the sentence can name it. */
+  weaponName: string | null;
   exhaustive: boolean;
   missing: string[];
   reactionLabel: string | null;
@@ -488,6 +564,7 @@ function Verdict({
   talentLevel,
   bagSize,
   sets,
+  weaponName,
   exhaustive,
   missing,
   reactionLabel,
@@ -530,16 +607,21 @@ function Verdict({
   */
   const worn = Object.entries(sets)
     .filter(([, count]) => count >= 2)
-    .map(
-      ([key, count]) =>
-        `${ARTIFACT_SETS[key]?.name ?? readableKey(key)} ${count >= 4 ? 4 : 2}-piece`,
-    );
+    .map(([key, count]) => `${setName(key)} ${count >= 4 ? 4 : 2}-piece`);
 
   return (
     <>
       <p className={screen.body}>
         {worn.length > 0 ? worn.join(' with ') : 'No set bonus'}, chosen from{' '}
-        <strong>{formatNumber(bagSize)}</strong> artifacts. Talent level {talentLevel}
+        <strong>{formatNumber(bagSize)}</strong> artifacts
+        {weaponName ? (
+          <>
+            , holding <strong>{weaponName}</strong>
+          </>
+        ) : (
+          ' and no weapon'
+        )}
+        . Talent level {talentLevel}
         {reactionLabel ? `, with ${reactionLabel.toLowerCase()}` : ''}.
       </p>
       <p className={screen.caption}>
