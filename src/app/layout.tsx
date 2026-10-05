@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Bodoni_Moda, Source_Sans_3 } from 'next/font/google';
 
 import { PersistentStorage } from '@/components/PersistentStorage';
+import { Sound } from '@/components/Sound';
 import { ServiceWorker } from '@/components/ServiceWorker';
 import { Shell } from '@/components/Shell';
 
@@ -57,6 +58,7 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
         <Shell>{children}</Shell>
         <ServiceWorker />
         <PersistentStorage />
+        <Sound />
       </body>
     </html>
   );

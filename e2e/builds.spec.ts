@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { setStepper } from './helpers';
+import { setStepper, settledAnswer } from './helpers';
 
 /**
  * The build optimiser, end to end.
@@ -101,10 +101,14 @@ async function importInventory(page: Page) {
   await expect(page.getByText(/Imported 10 artifacts/)).toBeVisible();
 }
 
-/** The one big numeral, as a number. It is aria-hidden display. */
+/**
+ * The one big numeral, as a number, once it has stopped counting.
+ *
+ * It is aria-hidden display and it now counts to its value rather than
+ * snapping, so reading it the instant it appears catches it partway up.
+ */
 async function readDamage(page: Page): Promise<number> {
-  const text = (await page.locator('p[aria-hidden="true"] span').first().textContent()) ?? '';
-  return Number(text.replace(/,/g, ''));
+  return Number((await settledAnswer(page)).replace(/,/g, ''));
 }
 
 /**
@@ -124,11 +128,13 @@ async function settled(page: Page): Promise<number> {
   return readDamage(page);
 }
 
-/** Waits until the shown answer is no longer the one it was. */
+/** Waits until the settled answer is no longer the one it was. */
 async function expectDamageToChange(page: Page, previous: number): Promise<number> {
   // Polled rather than waited on `aria-busy`, because the search finishes in
   // tens of milliseconds and the busy flag can come and go between checks.
-  await expect.poll(async () => readDamage(page), { timeout: 15_000 }).not.toBe(previous);
+  // Each read settles first, so this cannot land on a value the numeral was
+  // only passing through.
+  await expect.poll(async () => readDamage(page), { timeout: 25_000 }).not.toBe(previous);
   return readDamage(page);
 }
 

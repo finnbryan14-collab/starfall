@@ -25,10 +25,11 @@ import { WEAPONS, weaponScaling } from '@/data/weapons-generated';
 import { listArtifacts } from '@/db/artifacts';
 import { listRoster } from '@/db/roster';
 import { amplifyingFor } from '@/engine/damage/formula';
-import { fireBurst } from '@/three/signal';
+import { fireBurst } from '@/lib/moments';
 import type { SearchInput } from '@/engine/damage/search';
 import { characterBaseStats, weaponBaseStats, type StatMap } from '@/engine/stats/scaling';
 import { formatNumber } from '@/lib/format';
+import { useTweenedNumeral } from '@/motion';
 import type { ImportedArtifact, ImportedCharacter } from '@/lib/good';
 import { readableKey } from '@/lib/good';
 import { formatStat, formatStatValue, statName } from '@/lib/stats';
@@ -218,6 +219,11 @@ export function BuildScreen() {
   const { search, pending, error } = useBuildSearch(input);
   const best = search?.best[0] ?? null;
 
+  // Counts to its new value rather than snapping, the way /plan's always has.
+  const numeral = useTweenedNumeral(best ? best.damage : null, (value) =>
+    formatNumber(Math.round(value)),
+  );
+
   /*
     The eruption, once per character rather than once per answer.
 
@@ -275,6 +281,7 @@ export function BuildScreen() {
             }
             titleId="build-title"
             value={best ? formatNumber(Math.round(best.damage)) : '—'}
+            valueRef={numeral}
             valueLabel={
               best ? `${formatNumber(Math.round(best.damage))} damage` : 'Nothing to show yet'
             }

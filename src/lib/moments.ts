@@ -1,10 +1,15 @@
 /**
  * How a screen asks the sky for a meteor.
  *
- * An event rather than a context, because the sky lives in the shell and the
- * moments that deserve one are scattered across routes that have no reason to
- * know a renderer exists. A screen says "a 5★ just landed"; whether anything is
- * listening — reduced motion, no WebGL, data saver — is not its problem.
+ * An event rather than a context, because the things that respond live in the
+ * shell and the moments that deserve one are scattered across routes that have
+ * no reason to know a renderer or a speaker exists. A screen says "a 5★ just
+ * landed"; whether anything is listening — reduced motion, no WebGL, data
+ * saver, audio muted — is not its problem.
+ *
+ * This is the app's moment bus, not three.js's. It used to live in src/three/,
+ * which stopped being true the moment sound started listening to the same
+ * events as the sky.
  *
  * The one loud thing the sky does, so it is deliberately hard to fire by
  * accident: nothing calls this on a render, a load or an input change.

@@ -23,7 +23,7 @@ import { WEIGHT_PRESETS, presetById } from '@/engine/artifacts/weights';
 import { mulberry32 } from '@/engine/rng';
 import { formatNumber } from '@/lib/format';
 import { STAT_NAMES as MAIN_STAT_NAMES } from '@/lib/stats';
-import { duration, useReducedMotion } from '@/motion';
+import { duration, useReducedMotion, useTweenedNumeral } from '@/motion';
 import { useArtifacts } from '@/workers/useArtifacts';
 
 import styles from './ArtifactsScreen.module.css';
@@ -88,6 +88,11 @@ export function ArtifactsScreen() {
     { slot, mainStat, goal },
   );
 
+  // Counts to its new value rather than snapping, the way /plan's always has.
+  const numeral = useTweenedNumeral(score ? score.result.probability * 100 : null, (value) =>
+    value.toFixed(1),
+  );
+
   const mainStatOptions = Object.keys(MAIN_STAT_ODDS[slot]) as MainStatKey[];
   const goalUnit = goal.kind === 'critValue' ? 'crit value' : 'weighted rolls';
 
@@ -136,6 +141,7 @@ export function ArtifactsScreen() {
           title={`Worth leveling this ${slot}?`}
           titleId="art-title"
           value={score ? (score.result.probability * 100).toFixed(1) : '—'}
+          valueRef={numeral}
           unit={score ? '%' : undefined}
           valueLabel={
             score ? `${(score.result.probability * 100).toFixed(1)} percent` : 'Calculating'

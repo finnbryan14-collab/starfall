@@ -1,4 +1,5 @@
 import { Nav } from '@/components/Nav';
+import { PanelTransition } from '@/components/PanelTransition';
 import { SkyCanvas } from '@/components/SkyCanvas';
 import { Starfield } from '@/components/Starfield';
 import { StorageNotice } from '@/components/StorageNotice';
@@ -31,7 +32,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
         <StorageNotice />
 
-        <main className={styles.main}>{children}</main>
+        <PanelTransition className={styles.main}>{children}</PanelTransition>
 
         {/*
           The fan-project notice. On every page rather than only Account:

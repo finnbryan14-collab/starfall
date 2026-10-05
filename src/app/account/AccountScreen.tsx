@@ -18,6 +18,7 @@ import { useMountedNow } from '@/lib/use-now';
 import styles from './AccountScreen.module.css';
 import { useEnkaProfile } from './useEnkaProfile';
 import { BackupPanel } from './BackupPanel';
+import { SoundPanel } from './SoundPanel';
 import { GoodImport } from './GoodImport';
 import { HoyolabPanel } from './HoyolabPanel';
 import { WishImport } from './WishImport';
@@ -256,6 +257,8 @@ export function AccountScreen() {
         <HoyolabPanel uid={profile?.uid ?? null} />
 
         <BackupPanel />
+
+        <SoundPanel />
 
         <h2 className={screen.sec}>Server</h2>
         <p className={screen.body}>

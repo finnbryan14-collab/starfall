@@ -109,6 +109,21 @@ Motion explains a change the person caused. Nothing moves on its own except coun
 
 **Never:** scroll-triggered fade-ups on every section, hover lifts on every row, looping ambient animation, parallax, confetti.
 
+## Sound
+
+Sound follows motion's rule exactly: it responds to something the person did, never to a page loading. Two sounds, both synthesised from oscillators and filtered noise — nothing to license, nothing to download, and the whole of it tunable from `src/audio/sounds.ts`.
+
+| Moment          | Sound                                                                                                                                      |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Meteor          | A soft chime: three sine partials, slightly detuned so they beat. Almost all decay.                                                        |
+| Elemental burst | A sine swept downward under a lowpassed noise swell, opening and closing with the shockwave. Scaled by the same intensity the visual uses. |
+
+**On by default.** Browsers suspend audio until a gesture, so a first visit is silent regardless, and nothing plays that the player did not cause. Defaulting off would mean almost nobody ever hears it. One tap on Account turns it off and it stays off.
+
+**No volume slider.** Two short sounds do not need one, and an honest on/off beats a dial nobody moves.
+
+**Never:** music that starts by itself, a sound on every tap, anything on a page load.
+
 **Gotchas found while building the preview (anime.js 4.5):**
 
 - `scrambleText` must target `innerHTML`, and a trailing `%` in the text gets treated as a unit and doubled. Keep units in a sibling element and scramble only the number.

@@ -24,3 +24,4 @@ export {
 export { useReducedMotion } from './useReducedMotion';
 export { useAnimeScope } from './useAnimeScope';
 export { tweenNumber, type TweenNumberOptions } from './tweenNumber';
+export { useTweenedNumeral } from './useTweenedNumeral';

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { fireMeteor, onMeteor } from './signal';
+import { fireMeteor, onMeteor } from './moments';
 
 /**
  * The sky is in the shell and the moments worth a meteor are on routes that

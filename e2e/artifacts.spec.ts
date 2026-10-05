@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test';
 
+import { settledAnswer } from './helpers';
+
 /**
  * The Artifacts screen end to end.
  *
@@ -22,8 +24,8 @@ test.describe('Artifacts screen', () => {
     // The worker has to answer before anything else here is meaningful.
     await expect(page.getByText('Level it.')).toBeVisible({ timeout: 15_000 });
 
-    const numeral = page.locator('p[aria-hidden="true"] span').first();
-    const probability = Number(await numeral.textContent());
+    // Settled, not snapped: the numeral counts to its value now.
+    const probability = Number(await settledAnswer(page));
     expect(probability).toBeGreaterThan(45);
     expect(probability).toBeLessThan(55);
 
@@ -49,8 +51,7 @@ test.describe('Artifacts screen', () => {
 
   test('re-scores when the goal changes', async ({ page }) => {
     await expect(page.getByText('Level it.')).toBeVisible({ timeout: 15_000 });
-    const numeral = page.locator('p[aria-hidden="true"] span').first();
-    const before = Number(await numeral.textContent());
+    const before = Number(await settledAnswer(page));
 
     // A much harder goal must lower the odds.
     const goal = page.getByRole('spinbutton', { name: /^Goal/ });
@@ -59,8 +60,10 @@ test.describe('Artifacts screen', () => {
     await goal.fill('45');
     await goal.blur();
 
+    // Each read waits for the count to settle, so this cannot pass on a value
+    // the numeral was only passing through on its way up.
     await expect
-      .poll(async () => Number(await numeral.textContent()), { timeout: 15_000 })
+      .poll(async () => Number(await settledAnswer(page)), { timeout: 20_000 })
       .toBeLessThan(before);
   });
 

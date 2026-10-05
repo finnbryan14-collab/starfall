@@ -10,6 +10,7 @@ import type { HistorySummary } from '@/engine/wish/history';
 import { expectedFiveStars, luckierThan } from '@/engine/wish/luck';
 import { EXPECTED_PULLS_PER_5STAR, HARD_PITY } from '@/engine/wish/pity';
 import { formatNumber } from '@/lib/format';
+import { useTweenedNumeral } from '@/motion';
 import { readOr } from '@/lib/storage';
 
 import styles from './LuckScreen.module.css';
@@ -47,13 +48,19 @@ export function LuckScreen() {
     };
   }, []);
 
-  if (!loaded) return <section className={screen.panel} aria-busy="true" />;
-
   const fiveStars = summary?.fiveStars ?? [];
   // Only the pulls that produced a 5★ count. The pity built up since the last
   // one is an unfinished attempt and says nothing yet.
   const spent = fiveStars.reduce((sum, event) => sum + event.pity, 0);
   const luck = luckierThan(fiveStars.length, spent);
+
+  // Computed above the early return because the hook below cannot sit under
+  // one, and counts to its new value rather than snapping.
+  const numeral = useTweenedNumeral(luck === null ? null : luck * 100, (value) =>
+    Math.round(value).toString(),
+  );
+
+  if (!loaded) return <section className={screen.panel} aria-busy="true" />;
 
   return (
     <section className={screen.panel} aria-labelledby="luck-title">
@@ -80,6 +87,7 @@ export function LuckScreen() {
               title="Your luck"
               titleId="luck-title"
               value={Math.round(luck * 100).toString()}
+              valueRef={numeral}
               unit="%"
               valueLabel={`luckier than ${Math.round(luck * 100)} percent`}
             >

@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 
 import { useReducedMotion } from '@/motion';
-import { onBurst, onMeteor } from '@/three/signal';
+import { onBurst, onMeteor } from '@/lib/moments';
 import { loadShards } from '@/three/debris';
 import { createSky, starCountFor, type Sky } from '@/three/sky';
 
